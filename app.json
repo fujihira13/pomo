@@ -16,9 +16,12 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.fjhrmsshi.pomo",
+      "versionCode": 1,
+      "permissions": [],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon-foreground.png",
+        "backgroundImage": "./assets/adaptive-icon-background.png"
       }
     },
     "web": {
