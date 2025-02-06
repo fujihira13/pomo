@@ -3,12 +3,21 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { TaskList } from "./TaskList";
 import type { Task } from "./TaskList";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+type RootStackParamList = {
+  Home: undefined;
+  CreateTask: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
 interface HomeProps {
   onTaskSelect: (task: Task) => void;
+  navigation: NavigationProp;
 }
 
-export const Home: React.FC<HomeProps> = ({ onTaskSelect }) => {
+export const Home: React.FC<HomeProps> = ({ onTaskSelect, navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -17,7 +26,10 @@ export const Home: React.FC<HomeProps> = ({ onTaskSelect }) => {
           <TouchableOpacity style={styles.statsButton}>
             <Text style={styles.statsButtonText}>統計</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.newTaskButton}>
+          <TouchableOpacity
+            style={styles.newTaskButton}
+            onPress={() => navigation.navigate("CreateTask")}
+          >
             <Ionicons name="add" size={24} color="#FFFFFF" />
             <Text style={styles.newTaskButtonText}>新規タスク</Text>
           </TouchableOpacity>
