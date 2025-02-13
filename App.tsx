@@ -7,6 +7,7 @@ import { Home } from "./src/components/Home";
 import { CreateTask } from "./src/components/CreateTask";
 import { TimerScreen } from "./src/components/TimerScreen";
 import type { Task } from "./src/components/TaskList";
+import { TaskProvider } from "./src/contexts/TaskContext";
 
 export type RootStackParamList = {
   Home: undefined;
@@ -24,45 +25,49 @@ export default function App() {
     navigation: NativeStackNavigationProp<RootStackParamList>
   ) => {
     setSelectedTask(task);
-    navigation.navigate("Timer");
+    setTimeout(() => {
+      navigation.navigate("Timer");
+    }, 0);
   };
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          contentStyle: styles.container,
-        }}
-      >
-        <Stack.Screen name="Home">
-          {({ navigation }) => (
-            <Home
-              navigation={navigation}
-              onTaskSelect={(task) => handleTaskSelect(task, navigation)}
-            />
-          )}
-        </Stack.Screen>
-        <Stack.Screen name="CreateTask" component={CreateTask} />
-        <Stack.Screen name="Timer">
-          {({ navigation }) => {
-            if (!selectedTask) {
-              navigation.navigate("Home");
-              return null;
-            }
-            return (
-              <TimerScreen
-                task={selectedTask}
-                onBack={() => {
-                  setSelectedTask(null);
-                  navigation.navigate("Home");
-                }}
-              />
-            );
+    <TaskProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            contentStyle: styles.container,
           }}
-        </Stack.Screen>
-      </Stack.Navigator>
-    </NavigationContainer>
+        >
+          <Stack.Screen name="Home">
+            {({ navigation }) => (
+              <Home
+                navigation={navigation}
+                onTaskSelect={(task) => handleTaskSelect(task, navigation)}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="CreateTask" component={CreateTask} />
+          <Stack.Screen name="Timer">
+            {({ navigation }) => {
+              if (!selectedTask) {
+                navigation.navigate("Home");
+                return null;
+              }
+              return (
+                <TimerScreen
+                  task={selectedTask}
+                  onBack={() => {
+                    setSelectedTask(null);
+                    navigation.navigate("Home");
+                  }}
+                />
+              );
+            }}
+          </Stack.Screen>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </TaskProvider>
   );
 }
 
