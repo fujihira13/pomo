@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useContext } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { Task } from "./TaskList";
+import { useNavigation } from "@react-navigation/native";
+import { TaskContext } from "../contexts/TaskContext";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../App";
 
 interface TimerScreenProps {
   task: Task;
@@ -9,6 +13,19 @@ interface TimerScreenProps {
 }
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({ task, onBack }) => {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { setSelectedTask } = useContext(TaskContext);
+
+  const handleBack = () => {
+    // 画面遷移を先に行う
+    navigation.navigate("Home");
+    // その後で状態をクリア
+    setTimeout(() => {
+      setSelectedTask(null);
+    }, 0);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -44,7 +61,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({ task, onBack }) => {
         <Text style={styles.statsButtonText}>ステータスを見る</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
+      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
         <Ionicons name="arrow-back" size={24} color="#8F95B2" />
         <Text style={styles.backButtonText}>戻る</Text>
       </TouchableOpacity>
