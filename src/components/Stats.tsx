@@ -1,69 +1,162 @@
-import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
-import { LineChart } from "react-native-chart-kit";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
+import { LineChart, BarChart } from "react-native-chart-kit";
+import { Ionicons } from "@expo/vector-icons";
 
-const Stats = () => {
-  const weekDays = ["月", "火", "水", "木", "金", "土", "日"];
+interface StatsProps {
+  onBack: () => void;
+}
 
-  const sessionData = {
-    labels: weekDays,
-    datasets: [
-      {
-        data: [4, 3, 5, 4, 6, 8, 7],
-        color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
-        strokeWidth: 2,
-      },
-    ],
-  };
+type Period = "週間" | "月間" | "年間";
 
-  const studyTimeData = {
-    labels: weekDays,
-    datasets: [
-      {
-        data: [2, 1.5, 2.5, 2, 3, 4, 3.5],
-        color: (opacity = 1) => `rgba(46, 204, 113, ${opacity})`,
-        strokeWidth: 2,
-      },
-    ],
-  };
-
-  const chartConfig = {
-    backgroundColor: "#1e1e1e",
-    backgroundGradientFrom: "#1e1e1e",
-    backgroundGradientTo: "#1e1e1e",
-    decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    style: {
-      borderRadius: 16,
+// モックデータ
+const weeklyData = {
+  labels: ["月", "火", "水", "木", "金", "土", "日"],
+  datasets: [
+    {
+      data: [4, 6, 3, 5, 4, 8, 2],
     },
-    propsForDots: {
-      r: "6",
-      strokeWidth: "2",
+  ],
+};
+
+const taskDistribution = {
+  labels: ["プログラミング", "資格勉強", "読書", "その他"],
+  datasets: [
+    {
+      data: [15, 8, 6, 3],
     },
-  };
+  ],
+};
+
+const Stats: React.FC<StatsProps> = ({ onBack }) => {
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>("週間");
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>完了セッション数</Text>
-      <LineChart
-        data={sessionData}
-        width={Dimensions.get("window").width - 40}
-        height={220}
-        chartConfig={chartConfig}
-        bezier
-        style={styles.chart}
-      />
+      {/* ヘッダー */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>統計</Text>
+      </View>
 
-      <Text style={styles.title}>学習時間の推移</Text>
-      <LineChart
-        data={studyTimeData}
-        width={Dimensions.get("window").width - 40}
-        height={220}
-        chartConfig={chartConfig}
-        bezier
-        style={styles.chart}
-      />
+      {/* 期間選択タブ */}
+      <View style={styles.periodTabs}>
+        {(["週間", "月間", "年間"] as Period[]).map((period) => (
+          <TouchableOpacity
+            key={period}
+            style={[
+              styles.periodTab,
+              selectedPeriod === period && styles.selectedPeriodTab,
+            ]}
+            onPress={() => setSelectedPeriod(period)}
+          >
+            <Text
+              style={[
+                styles.periodTabText,
+                selectedPeriod === period && styles.selectedPeriodTabText,
+              ]}
+            >
+              {period}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 上部の統計情報 */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statBox}>
+            <Text style={styles.statTitle}>今週のセッション</Text>
+            <Text style={styles.statValue}>32</Text>
+            <Text style={styles.statDiff}>+5 vs 先週</Text>
+          </View>
+
+          <View style={styles.statBox}>
+            <Text style={styles.statTitle}>累積経験値</Text>
+            <Text style={styles.statValue}>1,920</Text>
+            <Text style={styles.statDiff}>+320 vs 先週</Text>
+          </View>
+
+          <View style={styles.statBox}>
+            <Text style={styles.statTitle}>継続日数</Text>
+            <Text style={styles.statValue}>14日</Text>
+            <Text style={styles.statDiff}>最高記録 vs 先週</Text>
+          </View>
+        </View>
+
+        {/* セッション数推移グラフ */}
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>セッション数推移</Text>
+          <LineChart
+            data={weeklyData}
+            width={Dimensions.get("window").width - 40}
+            height={220}
+            chartConfig={{
+              backgroundColor: "#1e1e1e",
+              backgroundGradientFrom: "#1e1e1e",
+              backgroundGradientTo: "#1e1e1e",
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(255, 165, 0, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              propsForBackgroundLines: {
+                strokeDasharray: "", // 実線
+                stroke: "rgba(255, 255, 255, 0.1)",
+              },
+              propsForDots: {
+                r: "4",
+                strokeWidth: "2",
+                stroke: "#ffa500",
+              },
+            }}
+            bezier
+            style={styles.chart}
+            withVerticalLines={true}
+            withHorizontalLines={true}
+            withDots={true}
+            withShadow={false}
+            segments={4}
+          />
+        </View>
+
+        {/* タスク分布グラフ */}
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>タスク分布</Text>
+          <BarChart
+            data={taskDistribution}
+            width={Dimensions.get("window").width - 40}
+            height={220}
+            yAxisLabel=""
+            yAxisSuffix=""
+            chartConfig={{
+              backgroundColor: "#1e1e1e",
+              backgroundGradientFrom: "#1e1e1e",
+              backgroundGradientTo: "#1e1e1e",
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(255, 165, 0, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              propsForBackgroundLines: {
+                strokeDasharray: "", // 実線
+                stroke: "rgba(255, 255, 255, 0.1)",
+              },
+            }}
+            style={styles.chart}
+            withHorizontalLabels={true}
+            segments={4}
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -72,16 +165,84 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1e1e1e",
-    padding: 20,
   },
-  title: {
-    color: "#ffffff",
-    fontSize: 24,
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  backButton: {
+    marginRight: 16,
+  },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 20,
     fontWeight: "bold",
+  },
+  periodTabs: {
+    flexDirection: "row",
+    marginBottom: 20,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 8,
+    padding: 4,
+  },
+  periodTab: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  selectedPeriodTab: {
+    backgroundColor: "#ffa500",
+  },
+  periodTabText: {
+    color: "#fff",
+    textAlign: "center",
+    fontSize: 14,
+  },
+  selectedPeriodTabText: {
+    color: "#1e1e1e",
+    fontWeight: "bold",
+  },
+  statsContainer: {
+    flexDirection: "column",
+    gap: 20,
     marginBottom: 20,
   },
+  statBox: {
+    backgroundColor: "#2a2a2a",
+    padding: 15,
+    borderRadius: 10,
+  },
+  statTitle: {
+    color: "#888",
+    fontSize: 14,
+  },
+  statValue: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+    marginVertical: 5,
+  },
+  statDiff: {
+    color: "#4CAF50",
+    fontSize: 12,
+  },
+  chartContainer: {
+    marginVertical: 20,
+  },
+  chartTitle: {
+    color: "#fff",
+    fontSize: 16,
+    marginBottom: 10,
+  },
   chart: {
-    marginVertical: 8,
     borderRadius: 16,
   },
 });

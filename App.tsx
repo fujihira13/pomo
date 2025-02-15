@@ -3,6 +3,7 @@ import { SafeAreaView, StyleSheet } from "react-native";
 import { Home } from "./src/components/Home";
 import { TimerScreen } from "./src/components/TimerScreen";
 import { NewTask } from "./src/components/NewTask";
+import Stats from "./src/components/Stats";
 import type { Task } from "./src/components/TaskList";
 
 const JOB_BONUSES: Record<string, string> = {
@@ -24,6 +25,7 @@ const TASK_ICONS: Record<string, string> = {
 export default function App() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const handleSaveTask = (
@@ -59,10 +61,13 @@ export default function App() {
           onClose={() => setShowNewTask(false)}
           onSave={handleSaveTask}
         />
+      ) : showStats ? (
+        <Stats onBack={() => setShowStats(false)} />
       ) : (
         <Home
           onTaskSelect={setSelectedTask}
           onNewTask={() => setShowNewTask(true)}
+          onShowStats={() => setShowStats(true)}
         />
       )}
     </SafeAreaView>

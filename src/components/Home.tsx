@@ -7,15 +7,20 @@ import type { Task } from "./TaskList";
 interface HomeProps {
   onTaskSelect: (task: Task) => void;
   onNewTask: () => void;
+  onShowStats: () => void;
 }
 
-export const Home: React.FC<HomeProps> = ({ onTaskSelect, onNewTask }) => {
+export const Home: React.FC<HomeProps> = ({
+  onTaskSelect,
+  onNewTask,
+  onShowStats,
+}) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>タスクを選択</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.statsButton}>
+          <TouchableOpacity style={styles.statsButton} onPress={onShowStats}>
             <Text style={styles.statsButtonText}>統計</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.newTaskButton} onPress={onNewTask}>
