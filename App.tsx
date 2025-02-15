@@ -3,7 +3,7 @@ import { SafeAreaView, StyleSheet } from "react-native";
 import { Home } from "./src/components/Home";
 import { TimerScreen } from "./src/components/TimerScreen";
 import { NewTask } from "./src/components/NewTask";
-import Stats from "./src/components/Stats";
+import { Stats } from "./src/components/Stats";
 import type { Task } from "./src/components/TaskList";
 
 const JOB_BONUSES: Record<string, string> = {

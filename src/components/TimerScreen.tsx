@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
 import type { Task } from "./TaskList";
 
 interface TimerScreenProps {
@@ -9,6 +10,70 @@ interface TimerScreenProps {
 }
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({ task, onBack }) => {
+  // タイマーの状態管理
+  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25分をデフォルトに設定
+  const [isRunning, setIsRunning] = useState(false);
+
+  // タイマーのカウントダウン処理
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          if (prevTime <= 1) {
+            setIsRunning(false);
+            playSound();
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isRunning, timeLeft]);
+
+  // 音声を再生する関数
+  async function playSound() {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        {
+          uri: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
+        },
+        { shouldPlay: true }
+      );
+
+      // 音声再生が終わったらリソースを解放
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if ("isLoaded" in status && status.isLoaded && status.didJustFinish) {
+          await sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.error("音声の再生に失敗しました:", error);
+    }
+  }
+
+  // タイマーの開始/一時停止
+  const toggleTimer = () => {
+    setIsRunning(!isRunning);
+  };
+
+  // タイマーのリセット
+  const resetTimer = () => {
+    setIsRunning(false);
+    setTimeLeft(25 * 60);
+  };
+
+  // 残り時間を分と秒に変換
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -20,13 +85,21 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({ task, onBack }) => {
       </View>
 
       <View style={styles.timerContainer}>
-        <Text style={styles.timer}>25:00</Text>
+        <Text style={styles.timer}>
+          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+        </Text>
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.startButton}>
-            <Ionicons name="play" size={24} color="#171923" />
-            <Text style={styles.startButtonText}>開始</Text>
+          <TouchableOpacity style={styles.startButton} onPress={toggleTimer}>
+            <Ionicons
+              name={isRunning ? "pause" : "play"}
+              size={24}
+              color="#171923"
+            />
+            <Text style={styles.startButtonText}>
+              {isRunning ? "一時停止" : "開始"}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.resetButton}>
+          <TouchableOpacity style={styles.resetButton} onPress={resetTimer}>
             <Text style={styles.resetButtonText}>リセット</Text>
           </TouchableOpacity>
         </View>
