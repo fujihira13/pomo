@@ -6,9 +6,10 @@ import type { Task } from "./TaskList";
 
 interface HomeProps {
   onTaskSelect: (task: Task) => void;
+  onNewTask: () => void;
 }
 
-export const Home: React.FC<HomeProps> = ({ onTaskSelect }) => {
+export const Home: React.FC<HomeProps> = ({ onTaskSelect, onNewTask }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -17,7 +18,7 @@ export const Home: React.FC<HomeProps> = ({ onTaskSelect }) => {
           <TouchableOpacity style={styles.statsButton}>
             <Text style={styles.statsButtonText}>統計</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.newTaskButton}>
+          <TouchableOpacity style={styles.newTaskButton} onPress={onNewTask}>
             <Ionicons name="add" size={24} color="#FFFFFF" />
             <Text style={styles.newTaskButtonText}>新規タスク</Text>
           </TouchableOpacity>

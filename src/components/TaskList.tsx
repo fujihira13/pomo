@@ -22,6 +22,10 @@ export interface Task {
     max: number;
   };
   skills: Skill[];
+  job?: {
+    type: string;
+    bonus: string;
+  };
 }
 
 interface TaskListProps {
