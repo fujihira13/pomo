@@ -4,6 +4,7 @@ import { Home } from "./src/components/Home";
 import { TimerScreen } from "./src/components/TimerScreen";
 import { NewTask } from "./src/components/NewTask";
 import { Stats } from "./src/components/Stats";
+import { StatsScreen } from "./src/components/StatsScreen";
 import type { Task } from "./src/components/TaskList";
 
 const JOB_BONUSES: Record<string, string> = {
@@ -26,6 +27,7 @@ export default function App() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showTimerStats, setShowTimerStats] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const handleSaveTask = (
@@ -55,7 +57,15 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       {selectedTask ? (
-        <TimerScreen task={selectedTask} onBack={() => setSelectedTask(null)} />
+        showTimerStats ? (
+          <StatsScreen onBack={() => setShowTimerStats(false)} />
+        ) : (
+          <TimerScreen
+            task={selectedTask}
+            onBack={() => setSelectedTask(null)}
+            onShowStats={() => setShowTimerStats(true)}
+          />
+        )
       ) : showNewTask ? (
         <NewTask
           onClose={() => setShowNewTask(false)}
