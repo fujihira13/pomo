@@ -13,13 +13,27 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
   onShowStats,
 }) => {
   const [settings, setSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
-  const [timeLeft, setTimeLeft] = useState(settings.workTime * 60);
+  const [timeLeft, setTimeLeft] = useState(
+    Number(DEFAULT_SETTINGS.workTime) * 60
+  );
   const [isRunning, setIsRunning] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [currentMode, setCurrentMode] = useState<
     "work" | "shortBreak" | "longBreak"
   >("work");
   const [completedSessions, setCompletedSessions] = useState(0);
+
+  // 設定が変更されたときにタイマーを更新
+  useEffect(() => {
+    // 現在のモードに応じて適切な時間を設定
+    let newTime = Number(settings.workTime);
+    if (currentMode === "shortBreak") {
+      newTime = Number(settings.shortBreakTime);
+    } else if (currentMode === "longBreak") {
+      newTime = Number(settings.longBreakTime);
+    }
+    setTimeLeft(newTime * 60);
+  }, [settings, currentMode]);
 
   // タイマーのカウントダウン処理
   useEffect(() => {
@@ -52,18 +66,18 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
       const newSessions = completedSessions + 1;
       setCompletedSessions(newSessions);
 
-      if (newSessions % settings.sessionsUntilLongBreak === 0) {
-        setTimeLeft(settings.longBreakTime * 60);
+      if (newSessions % Number(settings.sessionsUntilLongBreak) === 0) {
         setCurrentMode("longBreak");
+        setTimeLeft(Number(settings.longBreakTime) * 60);
         if (settings.autoStartBreaks) setIsRunning(true);
       } else {
-        setTimeLeft(settings.shortBreakTime * 60);
         setCurrentMode("shortBreak");
+        setTimeLeft(Number(settings.shortBreakTime) * 60);
         if (settings.autoStartBreaks) setIsRunning(true);
       }
     } else {
-      setTimeLeft(settings.workTime * 60);
       setCurrentMode("work");
+      setTimeLeft(Number(settings.workTime) * 60);
       if (settings.autoStartPomodoros) setIsRunning(true);
     }
   };
@@ -78,7 +92,6 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         { shouldPlay: true }
       );
 
-      // 音声再生が終わったらリソースを解放
       sound.setOnPlaybackStatusUpdate(async (status) => {
         if ("isLoaded" in status && status.isLoaded && status.didJustFinish) {
           await sound.unloadAsync();
@@ -89,26 +102,32 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     }
   }
 
-  // タイマーの開始/一時停止
   const toggleTimer = () => {
     setIsRunning(!isRunning);
   };
 
-  // タイマーのリセット
   const resetTimer = () => {
     setIsRunning(false);
     if (currentMode === "work") {
-      setTimeLeft(settings.workTime * 60);
+      setTimeLeft(Number(settings.workTime) * 60);
     } else if (currentMode === "shortBreak") {
-      setTimeLeft(settings.shortBreakTime * 60);
+      setTimeLeft(Number(settings.shortBreakTime) * 60);
     } else {
-      setTimeLeft(settings.longBreakTime * 60);
+      setTimeLeft(Number(settings.longBreakTime) * 60);
     }
   };
 
   const handleSaveSettings = (newSettings: TimerSettings) => {
     setSettings(newSettings);
-    resetTimer();
+    // 現在のモードに応じて適切な時間を設定
+    if (currentMode === "work") {
+      setTimeLeft(Number(newSettings.workTime) * 60);
+    } else if (currentMode === "shortBreak") {
+      setTimeLeft(Number(newSettings.shortBreakTime) * 60);
+    } else {
+      setTimeLeft(Number(newSettings.longBreakTime) * 60);
+    }
+    setIsRunning(false); // 設定変更時にタイマーを停止
   };
 
   // 残り時間を分と秒に変換

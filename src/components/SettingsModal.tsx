@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   Switch,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { settingsModalStyles as styles } from "../styles/components/SettingsModal.styles";
@@ -26,9 +27,82 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [localSettings, setLocalSettings] = React.useState(settings);
 
+  React.useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
+
+  const handleNumberInput = (value: string, key: keyof TimerSettings) => {
+    if (value === "") {
+      setLocalSettings((prev) => ({
+        ...prev,
+        [key]: "",
+      }));
+      return;
+    }
+
+    const numValue = parseInt(value);
+
+    if (isNaN(numValue)) {
+      return;
+    }
+
+    setLocalSettings((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const validateSettings = (newSettings: TimerSettings): boolean => {
+    if (
+      newSettings.workTime === "" ||
+      newSettings.shortBreakTime === "" ||
+      newSettings.longBreakTime === "" ||
+      newSettings.sessionsUntilLongBreak === ""
+    ) {
+      Alert.alert("エラー", "すべての項目を入力してください");
+      return false;
+    }
+
+    const workTime = parseInt(String(newSettings.workTime));
+    const shortBreakTime = parseInt(String(newSettings.shortBreakTime));
+    const longBreakTime = parseInt(String(newSettings.longBreakTime));
+    const sessionsUntilLongBreak = parseInt(
+      String(newSettings.sessionsUntilLongBreak)
+    );
+
+    if (workTime < 1 || workTime > 120) {
+      Alert.alert("エラー", "集中時間は1分から120分の間で設定してください");
+      return false;
+    }
+    if (shortBreakTime < 1 || shortBreakTime > 30) {
+      Alert.alert("エラー", "小休憩時間は1分から30分の間で設定してください");
+      return false;
+    }
+    if (longBreakTime < 1 || longBreakTime > 60) {
+      Alert.alert("エラー", "長休憩時間は1分から60分の間で設定してください");
+      return false;
+    }
+    if (sessionsUntilLongBreak < 1 || sessionsUntilLongBreak > 10) {
+      Alert.alert("エラー", "セッション数は1から10の間で設定してください");
+      return false;
+    }
+    return true;
+  };
+
   const handleSave = () => {
-    onSave(localSettings);
-    onClose();
+    if (validateSettings(localSettings)) {
+      const savedSettings = {
+        ...localSettings,
+        workTime: parseInt(String(localSettings.workTime)),
+        shortBreakTime: parseInt(String(localSettings.shortBreakTime)),
+        longBreakTime: parseInt(String(localSettings.longBreakTime)),
+        sessionsUntilLongBreak: parseInt(
+          String(localSettings.sessionsUntilLongBreak)
+        ),
+      };
+      onSave(savedSettings);
+      onClose();
+    }
   };
 
   const handleReset = () => {
@@ -47,32 +121,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>集中時間 (分)</Text>
+            <Text style={styles.label}>集中時間 (分) [1-120]</Text>
             <TextInput
               style={styles.input}
               value={String(localSettings.workTime)}
-              onChangeText={(value) =>
-                setLocalSettings({
-                  ...localSettings,
-                  workTime: parseInt(value) || DEFAULT_SETTINGS.workTime,
-                })
-              }
+              onChangeText={(value) => handleNumberInput(value, "workTime")}
               keyboardType="number-pad"
-              maxLength={2}
+              maxLength={3}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>小休憩時間 (分)</Text>
+            <Text style={styles.label}>小休憩時間 (分) [1-30]</Text>
             <TextInput
               style={styles.input}
               value={String(localSettings.shortBreakTime)}
               onChangeText={(value) =>
-                setLocalSettings({
-                  ...localSettings,
-                  shortBreakTime:
-                    parseInt(value) || DEFAULT_SETTINGS.shortBreakTime,
-                })
+                handleNumberInput(value, "shortBreakTime")
               }
               keyboardType="number-pad"
               maxLength={2}
@@ -80,16 +145,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>長休憩時間 (分)</Text>
+            <Text style={styles.label}>長休憩時間 (分) [1-60]</Text>
             <TextInput
               style={styles.input}
               value={String(localSettings.longBreakTime)}
               onChangeText={(value) =>
-                setLocalSettings({
-                  ...localSettings,
-                  longBreakTime:
-                    parseInt(value) || DEFAULT_SETTINGS.longBreakTime,
-                })
+                handleNumberInput(value, "longBreakTime")
               }
               keyboardType="number-pad"
               maxLength={2}
@@ -97,19 +158,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>長休憩までのセッション数</Text>
+            <Text style={styles.label}>長休憩までのセッション数 [1-10]</Text>
             <TextInput
               style={styles.input}
               value={String(localSettings.sessionsUntilLongBreak)}
               onChangeText={(value) =>
-                setLocalSettings({
-                  ...localSettings,
-                  sessionsUntilLongBreak:
-                    parseInt(value) || DEFAULT_SETTINGS.sessionsUntilLongBreak,
-                })
+                handleNumberInput(value, "sessionsUntilLongBreak")
               }
               keyboardType="number-pad"
-              maxLength={1}
+              maxLength={2}
             />
           </View>
 
@@ -117,10 +174,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <Switch
               value={localSettings.autoStartBreaks}
               onValueChange={(value) =>
-                setLocalSettings({
-                  ...localSettings,
+                setLocalSettings((prev) => ({
+                  ...prev,
                   autoStartBreaks: value,
-                })
+                }))
               }
               style={styles.checkbox}
             />
@@ -131,10 +188,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <Switch
               value={localSettings.autoStartPomodoros}
               onValueChange={(value) =>
-                setLocalSettings({
-                  ...localSettings,
+                setLocalSettings((prev) => ({
+                  ...prev,
                   autoStartPomodoros: value,
-                })
+                }))
               }
               style={styles.checkbox}
             />

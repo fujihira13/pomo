@@ -1,8 +1,8 @@
 export interface TimerSettings {
-  workTime: number;
-  shortBreakTime: number;
-  longBreakTime: number;
-  sessionsUntilLongBreak: number;
+  workTime: number | string;
+  shortBreakTime: number | string;
+  longBreakTime: number | string;
+  sessionsUntilLongBreak: number | string;
   autoStartBreaks: boolean;
   autoStartPomodoros: boolean;
 }
