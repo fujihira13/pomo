@@ -6,23 +6,27 @@ export const timerScreenStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: spacing.md,
+  },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    padding: spacing.md,
   },
   backButtonText: {
     color: colors.text.secondary,
     fontSize: typography.body.fontSize,
     marginLeft: spacing.sm,
   },
+  settingsButton: {
+    padding: spacing.sm,
+  },
   content: {
     flex: 1,
     padding: spacing.md,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: spacing.xl,
   },
   taskName: {
     ...typography.h1,
@@ -46,11 +50,21 @@ export const timerScreenStyles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.xl,
   },
+  timerMode: {
+    color: colors.text.secondary,
+    fontSize: typography.body.fontSize,
+    marginBottom: spacing.sm,
+  },
   timer: {
     color: colors.text.primary,
     fontSize: 64,
     fontWeight: "bold",
     marginBottom: spacing.lg,
+  },
+  sessionCount: {
+    color: colors.text.secondary,
+    fontSize: typography.caption.fontSize,
+    marginBottom: spacing.md,
   },
   controls: {
     flexDirection: "row",

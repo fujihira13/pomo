@@ -4,14 +4,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { TimerScreenProps } from "../types/components/TimerScreen.types";
 import { timerScreenStyles as styles } from "../styles/components/TimerScreen.styles";
+import { TimerSettings, DEFAULT_SETTINGS } from "../types/models/Settings";
+import { SettingsModal } from "./SettingsModal";
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({
   task,
   onBack,
   onShowStats,
 }) => {
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [settings, setSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
+  const [timeLeft, setTimeLeft] = useState(settings.workTime * 60);
   const [isRunning, setIsRunning] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [currentMode, setCurrentMode] = useState<
+    "work" | "shortBreak" | "longBreak"
+  >("work");
+  const [completedSessions, setCompletedSessions] = useState(0);
 
   // タイマーのカウントダウン処理
   useEffect(() => {
@@ -21,8 +29,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
       interval = setInterval(() => {
         setTimeLeft((prevTime) => {
           if (prevTime <= 1) {
-            setIsRunning(false);
-            playSound();
+            handleSessionComplete();
             return 0;
           }
           return prevTime - 1;
@@ -36,6 +43,30 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
       }
     };
   }, [isRunning, timeLeft]);
+
+  const handleSessionComplete = () => {
+    setIsRunning(false);
+    playSound();
+
+    if (currentMode === "work") {
+      const newSessions = completedSessions + 1;
+      setCompletedSessions(newSessions);
+
+      if (newSessions % settings.sessionsUntilLongBreak === 0) {
+        setTimeLeft(settings.longBreakTime * 60);
+        setCurrentMode("longBreak");
+        if (settings.autoStartBreaks) setIsRunning(true);
+      } else {
+        setTimeLeft(settings.shortBreakTime * 60);
+        setCurrentMode("shortBreak");
+        if (settings.autoStartBreaks) setIsRunning(true);
+      }
+    } else {
+      setTimeLeft(settings.workTime * 60);
+      setCurrentMode("work");
+      if (settings.autoStartPomodoros) setIsRunning(true);
+    }
+  };
 
   // 音声を再生する関数
   async function playSound() {
@@ -66,7 +97,18 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
   // タイマーのリセット
   const resetTimer = () => {
     setIsRunning(false);
-    setTimeLeft(25 * 60);
+    if (currentMode === "work") {
+      setTimeLeft(settings.workTime * 60);
+    } else if (currentMode === "shortBreak") {
+      setTimeLeft(settings.shortBreakTime * 60);
+    } else {
+      setTimeLeft(settings.longBreakTime * 60);
+    }
+  };
+
+  const handleSaveSettings = (newSettings: TimerSettings) => {
+    setSettings(newSettings);
+    resetTimer();
   };
 
   // 残り時間を分と秒に変換
@@ -75,10 +117,18 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
-        <Ionicons name="arrow-back" size={24} color="#8F95B2" />
-        <Text style={styles.backButtonText}>戻る</Text>
-      </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Ionicons name="arrow-back" size={24} color="#8F95B2" />
+          <Text style={styles.backButtonText}>戻る</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => setShowSettings(true)}
+        >
+          <Ionicons name="settings-outline" size={24} color="#8F95B2" />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.content}>
         <View style={styles.header}>
@@ -90,9 +140,19 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         </View>
 
         <View style={styles.timerContainer}>
+          <Text style={styles.timerMode}>
+            {currentMode === "work"
+              ? "作業中"
+              : currentMode === "shortBreak"
+              ? "小休憩"
+              : "長休憩"}
+          </Text>
           <Text style={styles.timer}>
             {String(minutes).padStart(2, "0")}:
             {String(seconds).padStart(2, "0")}
+          </Text>
+          <Text style={styles.sessionCount}>
+            セッション: {completedSessions} / {settings.sessionsUntilLongBreak}
           </Text>
           <View style={styles.controls}>
             <TouchableOpacity style={styles.startButton} onPress={toggleTimer}>
@@ -123,6 +183,13 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           <Text style={styles.statsButtonText}>ステータスを見る</Text>
         </TouchableOpacity>
       </View>
+
+      <SettingsModal
+        visible={showSettings}
+        settings={settings}
+        onClose={() => setShowSettings(false)}
+        onSave={handleSaveSettings}
+      />
     </SafeAreaView>
   );
 };
