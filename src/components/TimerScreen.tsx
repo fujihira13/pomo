@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, SafeAreaView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  Platform,
+  StatusBar,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { TimerScreenProps } from "../types/components/TimerScreen.types";
@@ -136,71 +143,87 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#8F95B2" />
-          <Text style={styles.backButtonText}>戻る</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => setShowSettings(true)}
-        >
-          <Ionicons name="settings-outline" size={24} color="#8F95B2" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.content}>
+      <View
+        style={[
+          styles.mainContainer,
+          Platform.OS === "android" && { paddingTop: StatusBar.currentHeight },
+        ]}
+      >
         <View style={styles.header}>
-          <Text style={styles.taskName}>{task.name}</Text>
-          <View style={styles.levelBadge}>
-            <Ionicons name="trophy" size={16} color="#FFD700" />
-            <Text style={styles.levelText}>レベル {task.level}</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={onBack}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="arrow-back" size={24} color="#8F95B2" />
+            <Text style={styles.backButtonText}>戻る</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => setShowSettings(true)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="settings-outline" size={24} color="#8F95B2" />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.timerContainer}>
-          <Text style={styles.timerMode}>
-            {currentMode === "work"
-              ? "作業中"
-              : currentMode === "shortBreak"
-              ? "小休憩"
-              : "長休憩"}
-          </Text>
-          <Text style={styles.timer}>
-            {String(minutes).padStart(2, "0")}:
-            {String(seconds).padStart(2, "0")}
-          </Text>
-          <Text style={styles.sessionCount}>
-            セッション: {completedSessions} / {settings.sessionsUntilLongBreak}
-          </Text>
-          <View style={styles.controls}>
-            <TouchableOpacity style={styles.startButton} onPress={toggleTimer}>
-              <Ionicons
-                name={isRunning ? "pause" : "play"}
-                size={24}
-                color="#171923"
-              />
-              <Text style={styles.startButtonText}>
-                {isRunning ? "一時停止" : "開始"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.resetButton} onPress={resetTimer}>
-              <Text style={styles.resetButtonText}>リセット</Text>
-            </TouchableOpacity>
+        <View style={styles.content}>
+          <View style={styles.taskHeader}>
+            <Text style={styles.taskName}>{task.name}</Text>
+            <View style={styles.levelBadge}>
+              <Ionicons name="trophy" size={16} color="#FFD700" />
+              <Text style={styles.levelText}>レベル {task.level}</Text>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.experienceContainer}>
-          <Text style={styles.experienceLabel}>経験値</Text>
-          <View style={styles.experienceBarContainer}>
-            <View style={[styles.experienceBar, { width: "0%" }]} />
+          <View style={styles.timerContainer}>
+            <Text style={styles.timerMode}>
+              {currentMode === "work"
+                ? "作業中"
+                : currentMode === "shortBreak"
+                ? "小休憩"
+                : "長休憩"}
+            </Text>
+            <Text style={styles.timer}>
+              {String(minutes).padStart(2, "0")}:
+              {String(seconds).padStart(2, "0")}
+            </Text>
+            <Text style={styles.sessionCount}>
+              セッション: {completedSessions} /{" "}
+              {settings.sessionsUntilLongBreak}
+            </Text>
+            <View style={styles.controls}>
+              <TouchableOpacity
+                style={styles.startButton}
+                onPress={toggleTimer}
+              >
+                <Ionicons
+                  name={isRunning ? "pause" : "play"}
+                  size={24}
+                  color="#171923"
+                />
+                <Text style={styles.startButtonText}>
+                  {isRunning ? "一時停止" : "開始"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.resetButton} onPress={resetTimer}>
+                <Text style={styles.resetButtonText}>リセット</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <Text style={styles.experienceText}>0 / 100</Text>
-        </View>
 
-        <TouchableOpacity style={styles.statsButton} onPress={onShowStats}>
-          <Text style={styles.statsButtonText}>ステータスを見る</Text>
-        </TouchableOpacity>
+          <View style={styles.experienceContainer}>
+            <Text style={styles.experienceLabel}>経験値</Text>
+            <View style={styles.experienceBarContainer}>
+              <View style={[styles.experienceBar, { width: "0%" }]} />
+            </View>
+            <Text style={styles.experienceText}>0 / 100</Text>
+          </View>
+
+          <TouchableOpacity style={styles.statsButton} onPress={onShowStats}>
+            <Text style={styles.statsButtonText}>ステータスを見る</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <SettingsModal
