@@ -9,6 +9,7 @@ export const Home: React.FC<HomeProps> = ({
   tasks,
   onTaskSelect,
   onEditTask,
+  onDeleteTask,
   onNewTask,
   onShowStats,
 }) => {
@@ -30,6 +31,7 @@ export const Home: React.FC<HomeProps> = ({
         tasks={tasks}
         onTaskSelect={onTaskSelect}
         onEditTask={onEditTask}
+        onDeleteTask={onDeleteTask}
       />
     </View>
   );

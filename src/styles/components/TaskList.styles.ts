@@ -1,18 +1,17 @@
 import { StyleSheet, ViewStyle, TextStyle } from "react-native";
-import { spacing } from "../theme";
 
 type TaskListStyles = {
   container: ViewStyle;
   taskCard: ViewStyle;
-  editButton: ViewStyle;
   taskContent: ViewStyle;
-  header: ViewStyle;
+  taskHeader: ViewStyle;
   iconContainer: ViewStyle;
   titleContainer: ViewStyle;
   taskName: TextStyle;
   jobLevelContainer: ViewStyle;
   jobBadge: ViewStyle;
   jobLevelText: TextStyle;
+  optionsButton: ViewStyle;
   experienceSection: ViewStyle;
   nextLevelText: TextStyle;
   experienceBar: ViewStyle;
@@ -23,56 +22,47 @@ type TaskListStyles = {
   skillsList: ViewStyle;
   skillBadge: ViewStyle;
   skillText: TextStyle;
+  modalOverlay: ViewStyle;
+  optionsMenu: ViewStyle;
+  optionItem: ViewStyle;
+  optionText: TextStyle;
+  deleteText: TextStyle;
 };
 
 export const taskListStyles = StyleSheet.create<TaskListStyles>({
   container: {
     flex: 1,
-    padding: spacing.md,
   },
   taskCard: {
-    backgroundColor: "#1A202C",
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: "#2D3748",
-    position: "relative",
-  },
-  editButton: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    zIndex: 1,
-    padding: 8,
-    backgroundColor: "#2D3748",
-    borderRadius: 8,
+    backgroundColor: "#2A2F45",
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: "hidden",
   },
   taskContent: {
-    flex: 1,
+    padding: 16,
   },
-  header: {
+  taskHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
-    backgroundColor: "#2D3748",
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    backgroundColor: "#171923",
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: spacing.md,
+    marginRight: 12,
   },
   titleContainer: {
     flex: 1,
   },
   taskName: {
     color: "#FFFFFF",
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   jobLevelContainer: {
     flexDirection: "row",
@@ -81,64 +71,91 @@ export const taskListStyles = StyleSheet.create<TaskListStyles>({
   jobBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2D3748",
+    backgroundColor: "#171923",
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 12,
+    gap: 4,
   },
   jobLevelText: {
-    color: "#FFD700",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginLeft: spacing.xs,
+    color: "#8F95B2",
+    fontSize: 12,
+  },
+  optionsButton: {
+    padding: 8,
   },
   experienceSection: {
-    marginBottom: spacing.md,
+    marginTop: 12,
   },
   nextLevelText: {
-    color: "#A0AEC0",
-    fontSize: 14,
-    marginBottom: spacing.xs,
+    color: "#8F95B2",
+    fontSize: 12,
+    marginBottom: 4,
   },
   experienceBar: {
-    height: 8,
-    backgroundColor: "#2D3748",
-    borderRadius: 4,
+    height: 4,
+    backgroundColor: "#171923",
+    borderRadius: 2,
     overflow: "hidden",
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   experienceProgress: {
     height: "100%",
     backgroundColor: "#FFD700",
-    borderRadius: 4,
+    borderRadius: 2,
   },
   experienceText: {
-    color: "#A0AEC0",
+    color: "#8F95B2",
     fontSize: 12,
     textAlign: "right",
   },
   skillsSection: {
-    marginTop: spacing.md,
+    marginTop: 12,
   },
   skillsTitle: {
-    color: "#A0AEC0",
-    fontSize: 14,
-    marginBottom: spacing.sm,
+    color: "#8F95B2",
+    fontSize: 12,
+    marginBottom: 8,
   },
   skillsList: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.sm,
+    gap: 8,
   },
   skillBadge: {
-    backgroundColor: "#2D3748",
+    backgroundColor: "#171923",
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   skillText: {
     color: "#FFD700",
     fontSize: 12,
-    fontWeight: "500",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  optionsMenu: {
+    backgroundColor: "#2A2F45",
+    borderRadius: 12,
+    padding: 8,
+    width: "80%",
+    maxWidth: 300,
+  },
+  optionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 12,
+  },
+  optionText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+  },
+  deleteText: {
+    color: "#FF4444",
   },
 });

@@ -137,6 +137,11 @@ export default function App() {
     }
   };
 
+  const handleDeleteTask = (taskId: string) => {
+    const updatedTasks = tasks.filter((task) => task.id !== taskId);
+    setTasks(updatedTasks);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {selectedTask ? (
@@ -165,6 +170,7 @@ export default function App() {
           tasks={tasks}
           onTaskSelect={setSelectedTask}
           onEditTask={handleEditTask}
+          onDeleteTask={handleDeleteTask}
           onNewTask={() => setShowNewTask(true)}
           onShowStats={() => setShowStats(true)}
         />

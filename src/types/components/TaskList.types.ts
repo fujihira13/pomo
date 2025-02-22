@@ -4,4 +4,5 @@ export interface TaskListProps {
   tasks: Task[];
   onTaskSelect: (task: Task) => void;
   onEditTask: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
 }
