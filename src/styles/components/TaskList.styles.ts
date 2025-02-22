@@ -1,109 +1,110 @@
 import { StyleSheet } from "react-native";
-import { colors, spacing, typography } from "../theme";
+import { spacing } from "../theme";
 
 export const taskListStyles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: spacing.md,
   },
   taskCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
+    backgroundColor: "#1A202C",
+    borderRadius: 16,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: "#2D3748",
+  },
+  taskContent: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: spacing.md,
   },
-  taskHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.sm,
-  },
   iconContainer: {
-    width: 40,
-    height: 40,
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 8,
+    width: 64,
+    height: 64,
+    backgroundColor: "#2D3748",
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
+  },
+  titleContainer: {
+    flex: 1,
   },
   taskName: {
-    ...typography.h2,
-  },
-  levelContainer: {
-    marginBottom: spacing.sm,
-  },
-  levelBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surfaceLight,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: 4,
-    alignSelf: "flex-start",
-    marginBottom: spacing.sm,
-  },
-  levelText: {
-    color: colors.primary,
-    marginLeft: spacing.xs,
-    fontSize: typography.caption.fontSize,
-  },
-  badges: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  badge: {
-    backgroundColor: colors.surfaceLight,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    borderRadius: 4,
-  },
-  badgeText: {
-    color: colors.secondary,
-    fontSize: typography.caption.fontSize,
-  },
-  experienceContainer: {
-    marginBottom: spacing.sm,
-  },
-  experienceLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.caption.fontSize,
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "bold",
     marginBottom: spacing.xs,
   },
-  experienceBarContainer: {
+  jobLevelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  jobBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2D3748",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  jobLevelText: {
+    color: "#FFD700",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginLeft: spacing.xs,
+  },
+  experienceSection: {
+    marginBottom: spacing.md,
+  },
+  nextLevelText: {
+    color: "#A0AEC0",
+    fontSize: 14,
+    marginBottom: spacing.xs,
+  },
+  experienceBar: {
     height: 8,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: "#2D3748",
     borderRadius: 4,
     overflow: "hidden",
     marginBottom: spacing.xs,
   },
-  experienceBar: {
+  experienceProgress: {
     height: "100%",
-    backgroundColor: colors.secondary,
+    backgroundColor: "#FFD700",
     borderRadius: 4,
   },
   experienceText: {
-    color: colors.text.primary,
-    fontSize: typography.caption.fontSize,
+    color: "#A0AEC0",
+    fontSize: 12,
     textAlign: "right",
   },
-  skillsContainer: {
-    marginTop: spacing.sm,
+  skillsSection: {
+    marginTop: spacing.md,
   },
-  skillsLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.caption.fontSize,
-    marginBottom: spacing.xs,
+  skillsTitle: {
+    color: "#A0AEC0",
+    fontSize: 14,
+    marginBottom: spacing.sm,
   },
   skillsList: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
   },
+  skillBadge: {
+    backgroundColor: "#2D3748",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
   skillText: {
-    color: colors.text.primary,
-    fontSize: typography.caption.fontSize,
-    backgroundColor: colors.surfaceLight,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    borderRadius: 4,
+    color: "#FFD700",
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

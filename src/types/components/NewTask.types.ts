@@ -1,6 +1,9 @@
+import { Task } from "../models/Task";
+
 export interface NewTaskProps {
   onClose: () => void;
   onSave: (taskName: string, taskType: string, jobType: string) => void;
+  editingTask?: Task | null;
 }
 
 export interface JobOption {

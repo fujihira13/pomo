@@ -2,11 +2,13 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { TaskList } from "./TaskList";
-import { HomeProps } from "../types/components/Home.types";
+import type { HomeProps } from "../types/components/Home.types";
 import { homeStyles as styles } from "../styles/components/Home.styles";
 
 export const Home: React.FC<HomeProps> = ({
+  tasks,
   onTaskSelect,
+  onEditTask,
   onNewTask,
   onShowStats,
 }) => {
@@ -24,7 +26,11 @@ export const Home: React.FC<HomeProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-      <TaskList onTaskSelect={onTaskSelect} />
+      <TaskList
+        tasks={tasks}
+        onTaskSelect={onTaskSelect}
+        onEditTask={onEditTask}
+      />
     </View>
   );
 };

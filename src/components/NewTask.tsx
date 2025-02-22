@@ -8,14 +8,8 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-type IconName =
-  | "code-outline"
-  | "book-outline"
-  | "game-controller-outline"
-  | "musical-notes-outline"
-  | "color-palette-outline"
-  | "time-outline";
+import type { Task } from "../types/models/Task";
+import type { IconName } from "../types/models/IconName";
 
 type JobIconName =
   | "shield-outline"
@@ -41,12 +35,33 @@ interface JobType {
 interface NewTaskProps {
   onClose: () => void;
   onSave: (taskName: string, taskType: string, jobType: string) => void;
+  editingTask?: Task | null;
 }
 
-export const NewTask: React.FC<NewTaskProps> = ({ onClose, onSave }) => {
-  const [taskName, setTaskName] = useState("");
-  const [selectedType, setSelectedType] = useState("");
-  const [selectedJob, setSelectedJob] = useState("");
+const TASK_ICONS: Record<string, IconName> = {
+  programming: "code-outline",
+  reading: "book-outline",
+  game: "game-controller-outline",
+  music: "musical-notes-outline",
+  art: "color-palette-outline",
+  study: "time-outline",
+};
+
+const getTaskTypeFromIcon = (icon: IconName): string => {
+  const entry = Object.entries(TASK_ICONS).find(([, value]) => value === icon);
+  return entry ? entry[0] : "";
+};
+
+export const NewTask: React.FC<NewTaskProps> = ({
+  onClose,
+  onSave,
+  editingTask,
+}) => {
+  const [taskName, setTaskName] = useState(editingTask?.name || "");
+  const [selectedType, setSelectedType] = useState(
+    editingTask ? getTaskTypeFromIcon(editingTask.icon) : ""
+  );
+  const [selectedJob, setSelectedJob] = useState(editingTask?.job.type || "");
 
   const taskTypes: TaskType[] = [
     { id: "programming", icon: "code-outline", label: "プログラミング" },
@@ -101,7 +116,9 @@ export const NewTask: React.FC<NewTaskProps> = ({ onClose, onSave }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>タスク名</Text>
+      <Text style={styles.title}>
+        {editingTask ? "タスクを編集" : "新規タスク"}
+      </Text>
       <TextInput
         style={styles.input}
         placeholder="タスクの名前を入力"

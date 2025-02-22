@@ -1,4 +1,4 @@
-import { IconName } from "./IconName";
+import type { IconName } from "./IconName";
 
 export interface Experience {
   current: number;
@@ -7,11 +7,13 @@ export interface Experience {
 
 export interface Skill {
   name: string;
+  level: number;
 }
 
 export interface Job {
   type: string;
   bonus: string;
+  icon: IconName;
 }
 
 export interface Task {

@@ -5,7 +5,15 @@ import { TimerScreen } from "./src/components/TimerScreen";
 import { NewTask } from "./src/components/NewTask";
 import { Stats } from "./src/components/Stats";
 import { StatsScreen } from "./src/components/StatsScreen";
-import type { Task } from "./src/components/TaskList";
+import type { Task } from "./src/types/models/Task";
+import type { IconName } from "./src/types/models/IconName";
+
+const JOB_NAMES: Record<string, string> = {
+  warrior: "戦士",
+  mage: "魔法使い",
+  priest: "僧侶",
+  sage: "賢者",
+};
 
 const JOB_BONUSES: Record<string, string> = {
   warrior: "集中力持続時間+20%",
@@ -14,7 +22,14 @@ const JOB_BONUSES: Record<string, string> = {
   sage: "スキル習得速度+25%",
 };
 
-const TASK_ICONS: Record<string, string> = {
+const JOB_ICONS: Record<string, IconName> = {
+  warrior: "shield-outline",
+  mage: "flash-outline",
+  priest: "heart-outline",
+  sage: "school-outline",
+};
+
+const TASK_ICONS: Record<string, IconName> = {
   programming: "code-outline",
   reading: "book-outline",
   game: "game-controller-outline",
@@ -29,6 +44,7 @@ export default function App() {
   const [showStats, setShowStats] = useState(false);
   const [showTimerStats, setShowTimerStats] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const handleSaveTask = (
     taskName: string,
@@ -46,12 +62,44 @@ export default function App() {
       },
       skills: [],
       job: {
-        type: jobType,
+        type: JOB_NAMES[jobType],
         bonus: JOB_BONUSES[jobType],
+        icon: JOB_ICONS[jobType],
       },
     };
     setTasks([...tasks, newTask]);
     setShowNewTask(false);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setShowNewTask(true);
+  };
+
+  const handleUpdateTask = (
+    taskName: string,
+    taskType: string,
+    jobType: string
+  ) => {
+    if (editingTask) {
+      const updatedTasks = tasks.map((task) =>
+        task.id === editingTask.id
+          ? {
+              ...task,
+              name: taskName,
+              icon: TASK_ICONS[taskType],
+              job: {
+                type: JOB_NAMES[jobType],
+                bonus: JOB_BONUSES[jobType],
+                icon: JOB_ICONS[jobType],
+              },
+            }
+          : task
+      );
+      setTasks(updatedTasks);
+      setEditingTask(null);
+      setShowNewTask(false);
+    }
   };
 
   return (
@@ -68,14 +116,20 @@ export default function App() {
         )
       ) : showNewTask ? (
         <NewTask
-          onClose={() => setShowNewTask(false)}
-          onSave={handleSaveTask}
+          onClose={() => {
+            setShowNewTask(false);
+            setEditingTask(null);
+          }}
+          onSave={editingTask ? handleUpdateTask : handleSaveTask}
+          editingTask={editingTask}
         />
       ) : showStats ? (
         <Stats onBack={() => setShowStats(false)} />
       ) : (
         <Home
+          tasks={tasks}
           onTaskSelect={setSelectedTask}
+          onEditTask={handleEditTask}
           onNewTask={() => setShowNewTask(true)}
           onShowStats={() => setShowStats(true)}
         />

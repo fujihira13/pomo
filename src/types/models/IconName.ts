@@ -5,4 +5,8 @@ export type IconName =
   | "musical-notes-outline"
   | "color-palette-outline"
   | "time-outline"
-  | "barbell-outline";
+  | "barbell-outline"
+  | "shield-outline"
+  | "flash-outline"
+  | "heart-outline"
+  | "school-outline";
