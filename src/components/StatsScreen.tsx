@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -121,11 +123,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#171923",
+    paddingTop: Platform.OS === "ios" ? 0 : StatusBar.currentHeight,
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
+    paddingTop: Platform.OS === "ios" ? 16 : 0,
   },
   backButtonText: {
     color: "#8F95B2",

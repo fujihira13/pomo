@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  Platform,
 } from "react-native";
 import { LineChart, BarChart } from "react-native-chart-kit";
 import { Ionicons } from "@expo/vector-icons";
@@ -174,6 +175,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#1e1e1e",
+    paddingTop: Platform.OS === "ios" ? 0 : StatusBar.currentHeight,
   },
   container: {
     flex: 1,
@@ -190,7 +192,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: Platform.OS === "ios" ? 16 : 0,
     paddingBottom: 20,
     backgroundColor: "#1e1e1e",
     zIndex: 1,

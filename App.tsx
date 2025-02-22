@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SafeAreaView, StyleSheet } from "react-native";
 import { Home } from "./src/components/Home";
 import { TimerScreen } from "./src/components/TimerScreen";
@@ -7,6 +7,7 @@ import { Stats } from "./src/components/Stats";
 import { StatsScreen } from "./src/components/StatsScreen";
 import type { Task } from "./src/types/models/Task";
 import type { IconName } from "./src/types/models/IconName";
+import { saveTasks, loadTasks } from "./src/utils/storage";
 
 const JOB_NAMES: Record<string, string> = {
   warrior: "戦士",
@@ -59,6 +60,20 @@ export default function App() {
   const [showTimerStats, setShowTimerStats] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  // アプリ起動時にタスクを読み込む
+  useEffect(() => {
+    const loadSavedTasks = async () => {
+      const savedTasks = await loadTasks();
+      setTasks(savedTasks);
+    };
+    loadSavedTasks();
+  }, []);
+
+  // タスクが更新されたら保存する
+  useEffect(() => {
+    saveTasks(tasks);
+  }, [tasks]);
 
   const handleSaveTask = (
     taskName: string,
