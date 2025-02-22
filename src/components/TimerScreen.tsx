@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
 } from "../types/models/Settings";
 import { SettingsModal } from "./SettingsModal";
 import { loadSettings, saveSettings } from "../utils/storage";
+import { StatsService } from "../services/StatsService";
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({
   task,
@@ -100,14 +101,71 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     setTimeLeft(newTime * 60);
   }, [settings, currentMode]);
 
+  const handleSessionComplete = useCallback(async () => {
+    // 一時的にタイマーを停止
+    setIsRunning(false);
+
+    try {
+      // 音声を再生
+      await playSound();
+
+      if (currentMode === "work") {
+        const newSessions = completedSessions + 1;
+
+        // セッションデータを保存
+        await StatsService.addSession({
+          timestamp: Date.now(),
+          duration: Number(settings.workTime) * 60,
+          taskType: task.name,
+          experiencePoints: 100,
+        });
+
+        // セッション数を更新
+        setCompletedSessions(newSessions);
+
+        // 次のモードを設定
+        if (newSessions % Number(settings.sessionsUntilLongBreak) === 0) {
+          const newTime = Number(settings.longBreakTime) * 60;
+          setCurrentMode("longBreak");
+          setTimeLeft(newTime);
+          // 自動開始設定が有効な場合は次のセッションを開始
+          if (settings.autoStartBreaks) {
+            setIsRunning(true);
+          }
+        } else {
+          const newTime = Number(settings.shortBreakTime) * 60;
+          setCurrentMode("shortBreak");
+          setTimeLeft(newTime);
+          // 自動開始設定が有効な場合は次のセッションを開始
+          if (settings.autoStartBreaks) {
+            setIsRunning(true);
+          }
+        }
+      } else {
+        // 休憩が終了したら作業モードに戻る
+        const newTime = Number(settings.workTime) * 60;
+        setCurrentMode("work");
+        setTimeLeft(newTime);
+        // 自動開始設定が有効な場合は次のセッションを開始
+        if (settings.autoStartPomodoros) {
+          setIsRunning(true);
+        }
+      }
+    } catch (error) {
+      console.error("セッション完了処理でエラーが発生しました:", error);
+    }
+  }, [currentMode, completedSessions, settings, task.name, playSound]);
+
   // タイマーのカウントダウン処理
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
+    let isCompleting = false;
 
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prevTime) => {
-          if (prevTime <= 1) {
+          if (prevTime <= 1 && !isCompleting) {
+            isCompleting = true;
             handleSessionComplete();
             return 0;
           }
@@ -121,31 +179,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         clearInterval(interval);
       }
     };
-  }, [isRunning, timeLeft]);
-
-  const handleSessionComplete = () => {
-    setIsRunning(false);
-    playSound();
-
-    if (currentMode === "work") {
-      const newSessions = completedSessions + 1;
-      setCompletedSessions(newSessions);
-
-      if (newSessions % Number(settings.sessionsUntilLongBreak) === 0) {
-        setCurrentMode("longBreak");
-        setTimeLeft(Number(settings.longBreakTime) * 60);
-        if (settings.autoStartBreaks) setIsRunning(true);
-      } else {
-        setCurrentMode("shortBreak");
-        setTimeLeft(Number(settings.shortBreakTime) * 60);
-        if (settings.autoStartBreaks) setIsRunning(true);
-      }
-    } else {
-      setCurrentMode("work");
-      setTimeLeft(Number(settings.workTime) * 60);
-      if (settings.autoStartPomodoros) setIsRunning(true);
-    }
-  };
+  }, [isRunning, timeLeft, handleSessionComplete]);
 
   // 音声を再生する関数
   async function playSound() {
