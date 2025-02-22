@@ -22,7 +22,15 @@ export const settingsModalStyles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    ...typography.h2,
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#8F95B2",
+    marginBottom: 16,
   },
   closeButton: {
     padding: spacing.xs,

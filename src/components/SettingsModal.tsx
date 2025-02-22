@@ -17,6 +17,7 @@ interface SettingsModalProps {
   settings: TimerSettings;
   onClose: () => void;
   onSave: (settings: TimerSettings) => void;
+  task: { name: string };
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -24,6 +25,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   settings,
   onClose,
   onSave,
+  task,
 }) => {
   const [localSettings, setLocalSettings] = React.useState(settings);
 
@@ -41,7 +43,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
 
     const numValue = parseInt(value);
-
     if (isNaN(numValue)) {
       return;
     }
@@ -63,12 +64,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       return false;
     }
 
-    const workTime = parseInt(String(newSettings.workTime));
-    const shortBreakTime = parseInt(String(newSettings.shortBreakTime));
-    const longBreakTime = parseInt(String(newSettings.longBreakTime));
-    const sessionsUntilLongBreak = parseInt(
-      String(newSettings.sessionsUntilLongBreak)
-    );
+    const workTime = parseInt(newSettings.workTime);
+    const shortBreakTime = parseInt(newSettings.shortBreakTime);
+    const longBreakTime = parseInt(newSettings.longBreakTime);
+    const sessionsUntilLongBreak = parseInt(newSettings.sessionsUntilLongBreak);
 
     if (workTime < 1 || workTime > 120) {
       Alert.alert("エラー", "集中時間は1分から120分の間で設定してください");
@@ -91,16 +90,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleSave = () => {
     if (validateSettings(localSettings)) {
-      const savedSettings = {
-        ...localSettings,
-        workTime: parseInt(String(localSettings.workTime)),
-        shortBreakTime: parseInt(String(localSettings.shortBreakTime)),
-        longBreakTime: parseInt(String(localSettings.longBreakTime)),
-        sessionsUntilLongBreak: parseInt(
-          String(localSettings.sessionsUntilLongBreak)
-        ),
-      };
-      onSave(savedSettings);
+      onSave(localSettings);
       onClose();
     }
   };
@@ -115,6 +105,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>設定</Text>
+            <Text style={styles.subtitle}>「{task.name}」の設定</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <Ionicons name="close" size={24} color="#8F95B2" />
             </TouchableOpacity>

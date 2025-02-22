@@ -6,19 +6,29 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { TimerScreenProps } from "../types/components/TimerScreen.types";
 import { timerScreenStyles as styles } from "../styles/components/TimerScreen.styles";
-import { TimerSettings, DEFAULT_SETTINGS } from "../types/models/Settings";
+import {
+  TimerSettings,
+  DEFAULT_SETTINGS,
+  AppSettings,
+} from "../types/models/Settings";
 import { SettingsModal } from "./SettingsModal";
+import { loadSettings, saveSettings, getTaskSettings } from "../utils/storage";
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({
   task,
   onBack,
   onShowStats,
 }) => {
+  const [appSettings, setAppSettings] = useState<AppSettings>({
+    globalSettings: DEFAULT_SETTINGS,
+    taskSettings: [],
+  });
   const [settings, setSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
   const [timeLeft, setTimeLeft] = useState(
     Number(DEFAULT_SETTINGS.workTime) * 60
@@ -30,9 +40,49 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
   >("work");
   const [completedSessions, setCompletedSessions] = useState(0);
 
+  // アプリ設定の読み込み
+  useEffect(() => {
+    const loadAppSettings = async () => {
+      try {
+        const savedSettings = await loadSettings();
+        if (savedSettings && savedSettings.globalSettings) {
+          setAppSettings(savedSettings);
+          const taskSettings = getTaskSettings(savedSettings, task.id);
+          setSettings(taskSettings);
+
+          // 現在のモードに応じて適切な時間を設定
+          let newTime = Number(taskSettings.workTime);
+          if (currentMode === "shortBreak") {
+            newTime = Number(taskSettings.shortBreakTime);
+          } else if (currentMode === "longBreak") {
+            newTime = Number(taskSettings.longBreakTime);
+          }
+          setTimeLeft(newTime * 60);
+        } else {
+          // 無効な設定の場合はデフォルト値を使用
+          setAppSettings({
+            globalSettings: DEFAULT_SETTINGS,
+            taskSettings: [],
+          });
+          setSettings(DEFAULT_SETTINGS);
+          setTimeLeft(Number(DEFAULT_SETTINGS.workTime) * 60);
+        }
+      } catch (error) {
+        console.error("設定の読み込みに失敗しました:", error);
+        // エラー時はデフォルト値を使用
+        setAppSettings({
+          globalSettings: DEFAULT_SETTINGS,
+          taskSettings: [],
+        });
+        setSettings(DEFAULT_SETTINGS);
+        setTimeLeft(Number(DEFAULT_SETTINGS.workTime) * 60);
+      }
+    };
+    loadAppSettings();
+  }, [task.id, currentMode]);
+
   // 設定が変更されたときにタイマーを更新
   useEffect(() => {
-    // 現在のモードに応じて適切な時間を設定
     let newTime = Number(settings.workTime);
     if (currentMode === "shortBreak") {
       newTime = Number(settings.shortBreakTime);
@@ -124,17 +174,44 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     }
   };
 
-  const handleSaveSettings = (newSettings: TimerSettings) => {
+  const handleSaveSettings = async (newSettings: TimerSettings) => {
+    // タイマーを停止
+    setIsRunning(false);
+
+    // タスク固有の設定を更新
+    const updatedTaskSettings = appSettings.taskSettings.filter(
+      (settings) => settings.taskId !== task.id
+    );
+    updatedTaskSettings.push({
+      taskId: task.id,
+      settings: newSettings,
+    });
+
+    const newAppSettings: AppSettings = {
+      ...appSettings,
+      taskSettings: updatedTaskSettings,
+    };
+
+    // 設定を更新
+    setAppSettings(newAppSettings);
     setSettings(newSettings);
-    // 現在のモードに応じて適切な時間を設定
-    if (currentMode === "work") {
-      setTimeLeft(Number(newSettings.workTime) * 60);
-    } else if (currentMode === "shortBreak") {
-      setTimeLeft(Number(newSettings.shortBreakTime) * 60);
-    } else {
-      setTimeLeft(Number(newSettings.longBreakTime) * 60);
+
+    // 現在のモードに応じてタイマーをリセット
+    let newTime = Number(newSettings.workTime);
+    if (currentMode === "shortBreak") {
+      newTime = Number(newSettings.shortBreakTime);
+    } else if (currentMode === "longBreak") {
+      newTime = Number(newSettings.longBreakTime);
     }
-    setIsRunning(false); // 設定変更時にタイマーを停止
+    setTimeLeft(newTime * 60);
+
+    // 設定を永続化
+    try {
+      await saveSettings(newAppSettings);
+    } catch (error) {
+      console.error("設定の保存に失敗しました:", error);
+      Alert.alert("エラー", "設定の保存に失敗しました");
+    }
   };
 
   // 残り時間を分と秒に変換
@@ -231,6 +308,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         settings={settings}
         onClose={() => setShowSettings(false)}
         onSave={handleSaveSettings}
+        task={task}
       />
     </SafeAreaView>
   );
