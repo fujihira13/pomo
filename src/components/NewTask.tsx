@@ -6,6 +6,8 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { Task } from "../types/models/Task";
@@ -187,12 +189,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#171923",
-    padding: 16,
+    paddingTop: Platform.OS === "ios" ? 0 : StatusBar.currentHeight,
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingTop: 16,
+    paddingBottom: 8,
     marginBottom: 16,
   },
   title: {
