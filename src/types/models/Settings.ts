@@ -10,10 +10,10 @@ export interface TimerSettings {
 export const DEFAULT_SETTINGS: TimerSettings = {
   workTime: "25",
   shortBreakTime: "5",
-  longBreakTime: "15",
+  longBreakTime: "30",
   sessionsUntilLongBreak: "4",
-  autoStartBreaks: false,
-  autoStartPomodoros: false,
+  autoStartBreaks: true,
+  autoStartPomodoros: true,
 };
 
 // タスクごとの設定を保存するための型

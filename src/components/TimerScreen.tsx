@@ -18,7 +18,7 @@ import {
   AppSettings,
 } from "../types/models/Settings";
 import { SettingsModal } from "./SettingsModal";
-import { loadSettings, saveSettings, getTaskSettings } from "../utils/storage";
+import { loadSettings, saveSettings } from "../utils/storage";
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({
   task,
@@ -45,17 +45,25 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     const loadAppSettings = async () => {
       try {
         const savedSettings = await loadSettings();
-        if (savedSettings && savedSettings.globalSettings) {
+        if (savedSettings) {
           setAppSettings(savedSettings);
-          const taskSettings = getTaskSettings(savedSettings, task.id);
-          setSettings(taskSettings);
+          // タスク固有の設定を取得
+          const taskSettings = savedSettings.taskSettings.find(
+            (settings) => settings.taskId === task.id
+          );
+
+          // タスク固有の設定が存在しない場合はデフォルト設定を使用
+          const settingsToUse = taskSettings
+            ? taskSettings.settings
+            : DEFAULT_SETTINGS;
+          setSettings(settingsToUse);
 
           // 現在のモードに応じて適切な時間を設定
-          let newTime = Number(taskSettings.workTime);
+          let newTime = Number(settingsToUse.workTime);
           if (currentMode === "shortBreak") {
-            newTime = Number(taskSettings.shortBreakTime);
+            newTime = Number(settingsToUse.shortBreakTime);
           } else if (currentMode === "longBreak") {
-            newTime = Number(taskSettings.longBreakTime);
+            newTime = Number(settingsToUse.longBreakTime);
           }
           setTimeLeft(newTime * 60);
         } else {

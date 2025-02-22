@@ -22,6 +22,7 @@ type TaskListStyles = {
   skillsList: ViewStyle;
   skillBadge: ViewStyle;
   skillText: TextStyle;
+  noSkillText: TextStyle;
   modalOverlay: ViewStyle;
   optionsMenu: ViewStyle;
   optionItem: ViewStyle;
@@ -131,6 +132,11 @@ export const taskListStyles = StyleSheet.create<TaskListStyles>({
   skillText: {
     color: "#FFD700",
     fontSize: 12,
+  },
+  noSkillText: {
+    color: "#8F95B2",
+    fontSize: 12,
+    fontStyle: "italic",
   },
   modalOverlay: {
     flex: 1,

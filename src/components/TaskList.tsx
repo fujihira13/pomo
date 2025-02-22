@@ -127,11 +127,9 @@ export const TaskList: React.FC<TaskListProps> = ({
               <View style={styles.skillsSection}>
                 <Text style={styles.skillsTitle}>習得スキル:</Text>
                 <View style={styles.skillsList}>
-                  {task.skills.map((skill, index) => (
-                    <View key={index} style={styles.skillBadge}>
-                      <Text style={styles.skillText}>{skill.name}</Text>
-                    </View>
-                  ))}
+                  <Text style={styles.noSkillText}>
+                    まだスキルを習得していません
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>
