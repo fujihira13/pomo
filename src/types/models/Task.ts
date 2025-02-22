@@ -24,4 +24,6 @@ export interface Task {
   experience: Experience;
   skills: Skill[];
   job: Job;
+  taskType?: string;
+  jobType?: string;
 }

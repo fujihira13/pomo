@@ -38,30 +38,14 @@ interface NewTaskProps {
   editingTask?: Task | null;
 }
 
-const TASK_ICONS: Record<string, IconName> = {
-  programming: "code-outline",
-  reading: "book-outline",
-  game: "game-controller-outline",
-  music: "musical-notes-outline",
-  art: "color-palette-outline",
-  study: "time-outline",
-};
-
-const getTaskTypeFromIcon = (icon: IconName): string => {
-  const entry = Object.entries(TASK_ICONS).find(([, value]) => value === icon);
-  return entry ? entry[0] : "";
-};
-
 export const NewTask: React.FC<NewTaskProps> = ({
   onClose,
   onSave,
   editingTask,
 }) => {
   const [taskName, setTaskName] = useState(editingTask?.name || "");
-  const [selectedType, setSelectedType] = useState(
-    editingTask ? getTaskTypeFromIcon(editingTask.icon) : ""
-  );
-  const [selectedJob, setSelectedJob] = useState(editingTask?.job.type || "");
+  const [selectedType, setSelectedType] = useState(editingTask?.taskType || "");
+  const [selectedJob, setSelectedJob] = useState(editingTask?.jobType || "");
 
   const taskTypes: TaskType[] = [
     { id: "programming", icon: "code-outline", label: "プログラミング" },
@@ -116,9 +100,14 @@ export const NewTask: React.FC<NewTaskProps> = ({
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>
-        {editingTask ? "タスクを編集" : "新規タスク"}
-      </Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>
+          {editingTask ? "タスクを編集" : "新規タスク"}
+        </Text>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Ionicons name="close" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
       <TextInput
         style={styles.input}
         placeholder="タスクの名前を入力"
@@ -186,7 +175,9 @@ export const NewTask: React.FC<NewTaskProps> = ({
         onPress={handleSave}
         disabled={!taskName || !selectedType || !selectedJob}
       >
-        <Text style={styles.saveButtonText}>タスクを作成</Text>
+        <Text style={styles.saveButtonText}>
+          {editingTask ? "更新" : "作成"}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -198,11 +189,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#171923",
     padding: 16,
   },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   title: {
     color: "#FFFFFF",
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#2A2F45",
   },
   subtitle: {
     color: "#FFFFFF",

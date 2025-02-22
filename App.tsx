@@ -38,6 +38,20 @@ const TASK_ICONS: Record<string, IconName> = {
   study: "time-outline",
 };
 
+// アイコンからタスクタイプを取得する関数
+const getTaskTypeFromIcon = (icon: IconName): string => {
+  const entry = Object.entries(TASK_ICONS).find(([, value]) => value === icon);
+  return entry ? entry[0] : "";
+};
+
+// 日本語の職業名から英語のジョブタイプを取得する関数
+const getJobTypeFromName = (japaneseName: string): string => {
+  const entry = Object.entries(JOB_NAMES).find(
+    ([, value]) => value === japaneseName
+  );
+  return entry ? entry[0] : "";
+};
+
 export default function App() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
@@ -72,7 +86,13 @@ export default function App() {
   };
 
   const handleEditTask = (task: Task) => {
-    setEditingTask(task);
+    // 編集用のタスクデータを準備
+    const editTask = {
+      ...task,
+      taskType: getTaskTypeFromIcon(task.icon),
+      jobType: getJobTypeFromName(task.job.type),
+    };
+    setEditingTask(editTask);
     setShowNewTask(true);
   };
 

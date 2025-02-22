@@ -14,10 +14,14 @@ export const TaskList: React.FC<TaskListProps> = ({
       {tasks.map((task) => (
         <View key={task.id} style={styles.taskCard}>
           <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => onEditTask(task)}
+          >
+            <Ionicons name="pencil" size={20} color="#FFD700" />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.taskContent}
             onPress={() => onTaskSelect(task)}
-            onLongPress={() => onEditTask(task)}
-            delayLongPress={500}
           >
             <View style={styles.header}>
               <View style={styles.iconContainer}>

@@ -1,7 +1,31 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, ViewStyle, TextStyle } from "react-native";
 import { spacing } from "../theme";
 
-export const taskListStyles = StyleSheet.create({
+type TaskListStyles = {
+  container: ViewStyle;
+  taskCard: ViewStyle;
+  editButton: ViewStyle;
+  taskContent: ViewStyle;
+  header: ViewStyle;
+  iconContainer: ViewStyle;
+  titleContainer: ViewStyle;
+  taskName: TextStyle;
+  jobLevelContainer: ViewStyle;
+  jobBadge: ViewStyle;
+  jobLevelText: TextStyle;
+  experienceSection: ViewStyle;
+  nextLevelText: TextStyle;
+  experienceBar: ViewStyle;
+  experienceProgress: ViewStyle;
+  experienceText: TextStyle;
+  skillsSection: ViewStyle;
+  skillsTitle: TextStyle;
+  skillsList: ViewStyle;
+  skillBadge: ViewStyle;
+  skillText: TextStyle;
+};
+
+export const taskListStyles = StyleSheet.create<TaskListStyles>({
   container: {
     flex: 1,
     padding: spacing.md,
@@ -13,6 +37,16 @@ export const taskListStyles = StyleSheet.create({
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: "#2D3748",
+    position: "relative",
+  },
+  editButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    zIndex: 1,
+    padding: 8,
+    backgroundColor: "#2D3748",
+    borderRadius: 8,
   },
   taskContent: {
     flex: 1,
