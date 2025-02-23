@@ -181,41 +181,43 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate }) => {
               </View>
 
               {/* セッション数推移グラフ */}
-              <View style={styles.chartContainer}>
-                <Text style={styles.chartTitle}>セッション数推移</Text>
-                <LineChart
-                  data={
-                    getChartData() || { labels: [], datasets: [{ data: [] }] }
-                  }
-                  width={Dimensions.get("window").width - 40}
-                  height={220}
-                  chartConfig={{
-                    backgroundColor: "#1e1e1e",
-                    backgroundGradientFrom: "#1e1e1e",
-                    backgroundGradientTo: "#1e1e1e",
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(255, 165, 0, ${opacity})`,
-                    labelColor: (opacity = 1) =>
-                      `rgba(255, 255, 255, ${opacity})`,
-                    propsForBackgroundLines: {
-                      strokeDasharray: "",
-                      stroke: "rgba(255, 255, 255, 0.1)",
-                    },
-                    propsForDots: {
-                      r: "4",
-                      strokeWidth: "2",
-                      stroke: "#ffa500",
-                    },
-                  }}
-                  bezier
-                  style={styles.chart}
-                  withVerticalLines={true}
-                  withHorizontalLines={true}
-                  withDots={true}
-                  withShadow={false}
-                  segments={4}
-                />
-              </View>
+              {selectedPeriod === "週間" && (
+                <View style={styles.chartContainer}>
+                  <Text style={styles.chartTitle}>セッション数推移</Text>
+                  <LineChart
+                    data={
+                      getChartData() || { labels: [], datasets: [{ data: [] }] }
+                    }
+                    width={Dimensions.get("window").width - 40}
+                    height={220}
+                    chartConfig={{
+                      backgroundColor: "#1e1e1e",
+                      backgroundGradientFrom: "#1e1e1e",
+                      backgroundGradientTo: "#1e1e1e",
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(255, 165, 0, ${opacity})`,
+                      labelColor: (opacity = 1) =>
+                        `rgba(255, 255, 255, ${opacity})`,
+                      propsForBackgroundLines: {
+                        strokeDasharray: "",
+                        stroke: "rgba(255, 255, 255, 0.1)",
+                      },
+                      propsForDots: {
+                        r: "4",
+                        strokeWidth: "2",
+                        stroke: "#ffa500",
+                      },
+                    }}
+                    bezier
+                    style={styles.chart}
+                    withVerticalLines={true}
+                    withHorizontalLines={true}
+                    withDots={true}
+                    withShadow={false}
+                    segments={4}
+                  />
+                </View>
+              )}
 
               {/* タスク分布グラフ */}
               <View style={styles.chartContainer}>
@@ -228,9 +230,11 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate }) => {
                     }
                   }
                   width={Dimensions.get("window").width - 40}
-                  height={220}
+                  height={240}
                   yAxisLabel=""
                   yAxisSuffix=""
+                  fromZero={true}
+                  showValuesOnTopOfBars={true}
                   chartConfig={{
                     backgroundColor: "#1e1e1e",
                     backgroundGradientFrom: "#1e1e1e",
@@ -243,10 +247,14 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate }) => {
                       strokeDasharray: "",
                       stroke: "rgba(255, 255, 255, 0.1)",
                     },
+                    formatYLabel: (value) =>
+                      Math.floor(Number(value)).toString(),
+                    barPercentage: 0.7,
                   }}
                   style={styles.chart}
                   withHorizontalLabels={true}
-                  segments={4}
+                  segments={5}
+                  flatColor={true}
                 />
               </View>
             </>

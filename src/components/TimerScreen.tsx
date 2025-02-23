@@ -308,7 +308,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
               {String(seconds).padStart(2, "0")}
             </Text>
             <Text style={styles.sessionCount}>
-              セッション: {completedSessions} /{" "}
+              完了したセッション: {completedSessions} /{" "}
               {settings.sessionsUntilLongBreak}
             </Text>
             <View style={styles.controls}>
