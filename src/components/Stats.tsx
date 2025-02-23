@@ -14,21 +14,17 @@ import { LineChart, BarChart } from "react-native-chart-kit";
 import { Ionicons } from "@expo/vector-icons";
 import { StatsService } from "../services/StatsService";
 import { Stats as StatsType } from "../types/stats";
+import type { Task } from "../types/models/Task";
 
 interface StatsProps {
   onBack: () => void;
   onUpdate?: () => void;
+  tasks: Task[];
 }
 
 type Period = "週間" | "月間" | "年間";
 
-const PERIOD_DAYS = {
-  週間: 7,
-  月間: 30,
-  年間: 365,
-};
-
-export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate }) => {
+export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate, tasks }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("週間");
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<StatsType | null>(null);
@@ -38,8 +34,22 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate }) => {
     setLoading(true);
     setError(null);
     try {
-      const days = PERIOD_DAYS[selectedPeriod];
+      const days = {
+        週間: 7,
+        月間: 30,
+        年間: 365,
+      }[selectedPeriod];
+
       const newStats = await StatsService.getStats(days);
+      if (tasks && tasks.length > 0 && newStats.taskDistribution.length > 0) {
+        newStats.taskDistribution = newStats.taskDistribution.map((dist) => {
+          const task = tasks.find((t) => t.id === dist.taskId);
+          return {
+            ...dist,
+            taskType: task?.name || dist.taskType,
+          };
+        });
+      }
       setStats(newStats);
       if (onUpdate) {
         onUpdate();
@@ -50,7 +60,7 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate }) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedPeriod, onUpdate]);
+  }, [selectedPeriod, onUpdate, tasks]);
 
   useEffect(() => {
     loadStats();
@@ -77,11 +87,16 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate }) => {
   const getTaskDistributionData = () => {
     if (!stats) return null;
 
+    // タスク分布データをソートして上位から表示
+    const sortedDistribution = [...stats.taskDistribution].sort(
+      (a, b) => b.sessionCount - a.sessionCount
+    );
+
     return {
-      labels: stats.taskDistribution.map((task) => task.taskType),
+      labels: sortedDistribution.map((task) => task.taskType),
       datasets: [
         {
-          data: stats.taskDistribution.map((task) => task.sessionCount),
+          data: sortedDistribution.map((task) => task.sessionCount),
         },
       ],
     };
@@ -222,40 +237,43 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate }) => {
               {/* タスク分布グラフ */}
               <View style={styles.chartContainer}>
                 <Text style={styles.chartTitle}>タスク分布</Text>
-                <BarChart
-                  data={
-                    getTaskDistributionData() || {
-                      labels: [],
-                      datasets: [{ data: [] }],
+                {stats && stats.taskDistribution.length > 0 ? (
+                  <BarChart
+                    data={
+                      getTaskDistributionData() || {
+                        labels: [],
+                        datasets: [{ data: [] }],
+                      }
                     }
-                  }
-                  width={Dimensions.get("window").width - 40}
-                  height={240}
-                  yAxisLabel=""
-                  yAxisSuffix=""
-                  fromZero={true}
-                  showValuesOnTopOfBars={true}
-                  chartConfig={{
-                    backgroundColor: "#1e1e1e",
-                    backgroundGradientFrom: "#1e1e1e",
-                    backgroundGradientTo: "#1e1e1e",
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(255, 165, 0, ${opacity})`,
-                    labelColor: (opacity = 1) =>
-                      `rgba(255, 255, 255, ${opacity})`,
-                    propsForBackgroundLines: {
-                      strokeDasharray: "",
-                      stroke: "rgba(255, 255, 255, 0.1)",
-                    },
-                    formatYLabel: (value) =>
-                      Math.floor(Number(value)).toString(),
-                    barPercentage: 0.7,
-                  }}
-                  style={styles.chart}
-                  withHorizontalLabels={true}
-                  segments={5}
-                  flatColor={true}
-                />
+                    width={Dimensions.get("window").width - 40}
+                    height={240}
+                    yAxisLabel=""
+                    yAxisSuffix=""
+                    fromZero={true}
+                    showValuesOnTopOfBars={true}
+                    segments={1}
+                    chartConfig={{
+                      backgroundColor: "#1e1e1e",
+                      backgroundGradientFrom: "#1e1e1e",
+                      backgroundGradientTo: "#1e1e1e",
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(255, 165, 0, ${opacity})`,
+                      labelColor: (opacity = 1) =>
+                        `rgba(255, 255, 255, ${opacity})`,
+                      propsForBackgroundLines: {
+                        strokeDasharray: "",
+                        stroke: "rgba(255, 255, 255, 0.1)",
+                      },
+                      formatYLabel: (value) => Number(value).toString(),
+                      barPercentage: 0.7,
+                    }}
+                    style={styles.chart}
+                    withHorizontalLabels={true}
+                    flatColor={true}
+                  />
+                ) : (
+                  <Text style={styles.noDataText}>データがありません</Text>
+                )}
               </View>
             </>
           )}
@@ -378,5 +396,10 @@ const styles = StyleSheet.create({
     color: "#1e1e1e",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  noDataText: {
+    color: "#fff",
+    textAlign: "center",
+    marginTop: 100,
   },
 });

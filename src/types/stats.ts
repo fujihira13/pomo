@@ -1,5 +1,6 @@
 export interface Session {
   id: string;
+  taskId: string;
   timestamp: number;
   duration: number;
   taskType: string;
@@ -15,6 +16,7 @@ export interface DailyStats {
 
 export interface TaskDistribution {
   taskType: string;
+  taskId: string;
   sessionCount: number;
 }
 

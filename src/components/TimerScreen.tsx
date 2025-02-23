@@ -20,6 +20,7 @@ import {
 import { SettingsModal } from "./SettingsModal";
 import { loadSettings, saveSettings } from "../utils/storage";
 import { StatsService } from "../services/StatsService";
+import { Task } from "../types/stats";
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({
   task,
@@ -114,9 +115,10 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
         // セッションデータを保存
         await StatsService.addSession({
+          taskId: task.id,
+          taskType: task.name,
           timestamp: Date.now(),
           duration: Number(settings.workTime) * 60,
-          taskType: task.name,
           experiencePoints: 100,
         });
 

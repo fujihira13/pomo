@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Session, Stats, DailyStats, TaskDistribution } from "../types/stats";
+import { Session, Stats, DailyStats } from "../types/stats";
 import {
   format,
   subDays,
@@ -29,11 +29,17 @@ export class StatsService {
     }
   }
 
-  static async addSession(session: Omit<Session, "id">): Promise<void> {
+  static async addSession(
+    session: Omit<Session, "id"> & {
+      taskId: string;
+      taskType: string;
+    }
+  ): Promise<void> {
     const sessions = await this.getSessions();
     const newSession = {
       ...session,
       id: Date.now().toString(),
+      taskId: session.taskId,
     };
     sessions.push(newSession);
     await this.saveSessions(sessions);
@@ -42,6 +48,8 @@ export class StatsService {
   static async getStats(days: number = 7): Promise<Stats> {
     try {
       const sessions = await this.getSessions();
+      console.log("取得したセッション:", sessions); // デバッグ用
+
       const endDate = new Date();
       const startDate = subDays(endDate, days - 1);
 
@@ -83,20 +91,6 @@ export class StatsService {
         });
       }
 
-      // タスク分布の計算
-      const taskCounts = new Map<string, number>();
-      filteredSessions.forEach((session) => {
-        const count = taskCounts.get(session.taskType) || 0;
-        taskCounts.set(session.taskType, count + 1);
-      });
-
-      const taskDistribution: TaskDistribution[] = Array.from(
-        taskCounts.entries()
-      ).map(([taskType, count]) => ({
-        taskType,
-        sessionCount: count,
-      }));
-
       // 継続日数の計算（最大365日まで）
       let streakDays = 0;
       let currentDate = new Date();
@@ -123,6 +117,26 @@ export class StatsService {
         0
       );
 
+      // タスク分布の計算
+      const taskCounts = new Map<string, number>();
+      filteredSessions.forEach((session) => {
+        const count = taskCounts.get(session.taskType) || 0;
+        taskCounts.set(session.taskType, count + 1);
+      });
+
+      const taskDistribution = Array.from(taskCounts.entries())
+        .map(([taskType, count]) => ({
+          taskType,
+          taskId:
+            filteredSessions.find((s) => s.taskType === taskType)?.taskId ||
+            taskType,
+          sessionCount: count,
+        }))
+        .filter((dist) => dist.sessionCount > 0)
+        .sort((a, b) => b.sessionCount - a.sessionCount);
+
+      console.log("最終的なタスク分布:", taskDistribution); // デバッグ用
+
       return {
         dailyStats,
         taskDistribution,
@@ -138,6 +152,25 @@ export class StatsService {
         streakDays: 0,
         totalExperience: 0,
       };
+    }
+  }
+
+  static async deleteTaskSessions(taskId: string): Promise<void> {
+    try {
+      const sessions = await this.getSessions();
+      console.log("削除前のセッション:", sessions); // デバッグ用
+
+      // taskIdに一致するセッションを除外
+      const filteredSessions = sessions.filter(
+        (session) => session.taskId !== taskId
+      );
+      console.log("削除後のセッション:", filteredSessions); // デバッグ用
+
+      // 更新されたセッションを保存
+      await this.saveSessions(filteredSessions);
+    } catch (error) {
+      console.error("セッションの削除に失敗しました:", error);
+      throw error; // エラーを上位に伝播
     }
   }
 }

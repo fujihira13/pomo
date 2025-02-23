@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { TaskList } from "./TaskList";
 import type { HomeProps } from "../types/components/Home.types";
 import { homeStyles as styles } from "../styles/components/Home.styles";
+import { StatsService } from "../services/StatsService";
 
 export const Home: React.FC<HomeProps> = ({
   tasks,
@@ -15,12 +16,30 @@ export const Home: React.FC<HomeProps> = ({
 }) => {
   const isTaskLimitReached = tasks.length >= 5;
 
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      // 統計データからタスクのセッションを削除
+      await StatsService.deleteTaskSessions(taskId);
+      // タスクを削除
+      onDeleteTask(taskId);
+    } catch (error) {
+      console.error("タスクの削除に失敗しました:", error);
+    }
+  };
+
+  const handleShowStats = () => {
+    onShowStats(tasks);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>タスク一覧</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.statsButton} onPress={onShowStats}>
+          <TouchableOpacity
+            style={styles.statsButton}
+            onPress={handleShowStats}
+          >
             <Text style={styles.statsButtonText}>統計</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -42,7 +61,7 @@ export const Home: React.FC<HomeProps> = ({
         tasks={tasks}
         onTaskSelect={onTaskSelect}
         onEditTask={onEditTask}
-        onDeleteTask={onDeleteTask}
+        onDeleteTask={handleDeleteTask}
       />
     </View>
   );

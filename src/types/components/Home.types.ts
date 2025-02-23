@@ -6,5 +6,5 @@ export interface HomeProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onNewTask: () => void;
-  onShowStats: () => void;
+  onShowStats: (tasks: Task[]) => void;
 }
