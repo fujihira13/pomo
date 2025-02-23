@@ -42,4 +42,8 @@ export const homeStyles = StyleSheet.create({
     color: colors.text.primary,
     fontWeight: "bold",
   },
+  disabledButton: {
+    opacity: 0.5,
+    backgroundColor: colors.surfaceLight,
+  },
 });

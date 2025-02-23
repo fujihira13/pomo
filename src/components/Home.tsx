@@ -13,6 +13,8 @@ export const Home: React.FC<HomeProps> = ({
   onNewTask,
   onShowStats,
 }) => {
+  const isTaskLimitReached = tasks.length >= 5;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -21,9 +23,18 @@ export const Home: React.FC<HomeProps> = ({
           <TouchableOpacity style={styles.statsButton} onPress={onShowStats}>
             <Text style={styles.statsButtonText}>統計</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.newTaskButton} onPress={onNewTask}>
+          <TouchableOpacity
+            style={[
+              styles.newTaskButton,
+              isTaskLimitReached && styles.disabledButton,
+            ]}
+            onPress={onNewTask}
+            disabled={isTaskLimitReached}
+          >
             <Ionicons name="add" size={20} color="#FFFFFF" />
-            <Text style={styles.newTaskButtonText}>新規タスク</Text>
+            <Text style={styles.newTaskButtonText}>
+              {isTaskLimitReached ? "タスク上限（5件）" : "新規タスク"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
