@@ -18,13 +18,16 @@ import {
   AppSettings,
 } from "../types/models/Settings";
 import { SettingsModal } from "./SettingsModal";
-import { loadSettings, saveSettings } from "../utils/storage";
+import { loadSettings, saveSettings, updateTask } from "../utils/storage";
 import { StatsService } from "../services/StatsService";
+import { updateExperienceAndLevel } from "../utils/levelUtils";
+import { Task } from "../types/models/Task";
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({
   task,
   onBack,
   onShowStats,
+  onTaskUpdate,
 }) => {
   const [appSettings, setAppSettings] = useState<AppSettings>({
     globalSettings: DEFAULT_SETTINGS,
@@ -40,6 +43,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     "work" | "shortBreak" | "longBreak"
   >("work");
   const [completedSessions, setCompletedSessions] = useState(0);
+  const [currentTask, setCurrentTask] = useState(task);
 
   // アプリ設定の読み込み
   useEffect(() => {
@@ -101,6 +105,28 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     setTimeLeft(newTime * 60);
   }, [settings, currentMode]);
 
+  // タスク更新後にApp.tsxのタスクリストも更新するための関数
+  const updateTaskAndNotify = async (updatedTask: Task) => {
+    try {
+      // タスクを更新
+      const success = await updateTask(updatedTask);
+      if (success) {
+        console.log("タスクが正常に更新されました:", updatedTask);
+        // 現在のタスク状態を更新
+        setCurrentTask(updatedTask);
+
+        // 親コンポーネントに通知（存在する場合のみ）
+        if (onTaskUpdate) {
+          onTaskUpdate(updatedTask);
+        }
+      } else {
+        console.error("タスクの更新に失敗しました");
+      }
+    } catch (error) {
+      console.error("タスク更新中にエラーが発生しました:", error);
+    }
+  };
+
   const handleSessionComplete = useCallback(async () => {
     // 一時的にタイマーを停止
     setIsRunning(false);
@@ -112,14 +138,63 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
       if (currentMode === "work") {
         const newSessions = completedSessions + 1;
 
+        // 経験値ポイントの計算（職業によるボーナスを考慮）
+        let baseExpPoints = 100;
+
+        // 魔法使いは経験値+30%ボーナスがある
+        if (currentTask.job.type === "魔法使い") {
+          baseExpPoints = Math.floor(baseExpPoints * 1.3);
+        }
+
         // セッションデータを保存
         await StatsService.addSession({
-          taskId: task.id,
-          taskType: task.name,
+          taskId: currentTask.id,
+          taskType: currentTask.name,
           timestamp: Date.now(),
           duration: Number(settings.workTime) * 60,
-          experiencePoints: 100,
+          experiencePoints: baseExpPoints,
         });
+
+        console.log(
+          "セッション完了前のタスク:",
+          JSON.stringify(currentTask, null, 2)
+        );
+
+        // タスクの経験値を更新してレベルアップ判定
+        const { currentExp, maxExp, level, didLevelUp } =
+          updateExperienceAndLevel(
+            currentTask.experience.current,
+            currentTask.experience.max,
+            currentTask.level,
+            baseExpPoints
+          );
+
+        console.log("更新後の値:", { currentExp, maxExp, level, didLevelUp });
+
+        // タスクを更新
+        const updatedTask = {
+          ...currentTask,
+          level,
+          experience: {
+            current: currentExp,
+            max: maxExp,
+          },
+        };
+
+        console.log("更新後のタスク:", JSON.stringify(updatedTask, null, 2));
+
+        // タスクを更新して保存
+        await updateTaskAndNotify(updatedTask);
+
+        // レベルアップした場合
+        if (didLevelUp) {
+          // レベルアップ通知
+          Alert.alert(
+            "レベルアップ！",
+            `「${currentTask.name}」のレベルが${level}に上がりました！`,
+            [{ text: "OK", onPress: () => {} }]
+          );
+        }
 
         // セッション数を更新
         setCompletedSessions(newSessions);
@@ -155,7 +230,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     } catch (error) {
       console.error("セッション完了処理でエラーが発生しました:", error);
     }
-  }, [currentMode, completedSessions, settings, task.name, playSound]);
+  }, [currentMode, completedSessions, settings, currentTask, playSound]);
 
   // タイマーのカウントダウン処理
   useEffect(() => {
@@ -295,10 +370,10 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
         <View style={styles.content}>
           <View style={styles.taskHeader}>
-            <Text style={styles.taskName}>{task.name}</Text>
+            <Text style={styles.taskName}>{currentTask.name}</Text>
             <View style={styles.levelBadge}>
               <Ionicons name="trophy" size={16} color="#FFD700" />
-              <Text style={styles.levelText}>レベル {task.level}</Text>
+              <Text style={styles.levelText}>レベル {currentTask.level}</Text>
             </View>
           </View>
 
@@ -341,9 +416,22 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           <View style={styles.experienceContainer}>
             <Text style={styles.experienceLabel}>経験値</Text>
             <View style={styles.experienceBarContainer}>
-              <View style={[styles.experienceBar, { width: "0%" }]} />
+              <View
+                style={[
+                  styles.experienceBar,
+                  {
+                    width: `${
+                      (currentTask.experience.current /
+                        currentTask.experience.max) *
+                      100
+                    }%`,
+                  },
+                ]}
+              />
             </View>
-            <Text style={styles.experienceText}>0 / 100</Text>
+            <Text style={styles.experienceText}>
+              {currentTask.experience.current} / {currentTask.experience.max}
+            </Text>
           </View>
 
           <TouchableOpacity
@@ -351,6 +439,45 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
             onPress={handleShowStats}
           >
             <Text style={styles.statsButtonText}>ステータスを見る</Text>
+          </TouchableOpacity>
+
+          {/* デバッグボタン - 実際のアプリでは削除してください */}
+          <TouchableOpacity
+            style={[styles.statsButton, { marginTop: 10 }]}
+            onPress={() => {
+              // 100経験値を追加
+              const { currentExp, maxExp, level, didLevelUp } =
+                updateExperienceAndLevel(
+                  currentTask.experience.current,
+                  currentTask.experience.max,
+                  currentTask.level,
+                  100
+                );
+
+              // タスクを更新
+              const updatedTask = {
+                ...currentTask,
+                level,
+                experience: {
+                  current: currentExp,
+                  max: maxExp,
+                },
+              };
+
+              // 更新を通知
+              updateTaskAndNotify(updatedTask);
+
+              // レベルアップした場合
+              if (didLevelUp) {
+                Alert.alert(
+                  "レベルアップ！",
+                  `「${currentTask.name}」のレベルが${level}に上がりました！`,
+                  [{ text: "OK", onPress: () => {} }]
+                );
+              }
+            }}
+          >
+            <Text style={styles.statsButtonText}>+100経験値（デバッグ用）</Text>
           </TouchableOpacity>
         </View>
       </View>

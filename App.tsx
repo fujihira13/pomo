@@ -9,6 +9,7 @@ import type { Task } from "./src/types/models/Task";
 import type { IconName } from "./src/types/models/IconName";
 import { saveTasks, loadTasks } from "./src/utils/storage";
 import { StatsService } from "./src/services/StatsService";
+import { calculateExpForNextLevel } from "./src/utils/levelUtils";
 
 const JOB_NAMES: Record<string, string> = {
   warrior: "戦士",
@@ -77,6 +78,15 @@ export default function App() {
     saveTasks(tasks);
   }, [tasks]);
 
+  // タスクを更新する関数（レベルアップ時などに使用）
+  const updateTaskData = (updatedTask: Task) => {
+    console.log("App.tsxでタスクを更新します:", updatedTask);
+    const updatedTasks = tasks.map((task) =>
+      task.id === updatedTask.id ? updatedTask : task
+    );
+    setTasks(updatedTasks);
+  };
+
   const handleSaveTask = (
     taskName: string,
     taskType: string,
@@ -89,7 +99,7 @@ export default function App() {
       level: 1,
       experience: {
         current: 0,
-        max: 100,
+        max: calculateExpForNextLevel(1), // レベル1の必要経験値を計算
       },
       skills: [],
       job: {
@@ -197,6 +207,7 @@ export default function App() {
             task={selectedTask}
             onBack={() => setCurrentScreen("tasks")}
             onShowStats={handleShowTaskStats}
+            onTaskUpdate={updateTaskData}
           />
         ))}
 
