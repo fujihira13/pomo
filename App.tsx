@@ -8,6 +8,7 @@ import { StatsScreen } from "./src/components/StatsScreen";
 import type { Task } from "./src/types/models/Task";
 import type { IconName } from "./src/types/models/IconName";
 import { saveTasks, loadTasks } from "./src/utils/storage";
+import { StatsService } from "./src/services/StatsService";
 
 const JOB_NAMES: Record<string, string> = {
   warrior: "戦士",
@@ -111,29 +112,40 @@ export default function App() {
     setShowNewTask(true);
   };
 
-  const handleUpdateTask = (
+  const handleUpdateTask = async (
     taskName: string,
     taskType: string,
     jobType: string
   ) => {
     if (editingTask) {
-      const updatedTasks = tasks.map((task) =>
-        task.id === editingTask.id
-          ? {
-              ...task,
-              name: taskName,
-              icon: TASK_ICONS[taskType],
-              job: {
-                type: JOB_NAMES[jobType],
-                bonus: JOB_BONUSES[jobType],
-                icon: JOB_ICONS[jobType],
-              },
-            }
-          : task
-      );
-      setTasks(updatedTasks);
-      setEditingTask(null);
-      setShowNewTask(false);
+      try {
+        // タスク名が変更された場合は統計データも更新
+        if (editingTask.name !== taskName) {
+          await StatsService.updateTaskName(editingTask.id, taskName);
+        }
+
+        // タスクリストを更新
+        const updatedTasks = tasks.map((task) =>
+          task.id === editingTask.id
+            ? {
+                ...task,
+                name: taskName,
+                icon: TASK_ICONS[taskType],
+                job: {
+                  type: JOB_NAMES[jobType],
+                  bonus: JOB_BONUSES[jobType],
+                  icon: JOB_ICONS[jobType],
+                },
+              }
+            : task
+        );
+        setTasks(updatedTasks);
+        setEditingTask(null);
+        setShowNewTask(false);
+      } catch (error) {
+        console.error("タスク更新中にエラーが発生しました:", error);
+        // エラー通知を表示するなどの追加処理
+      }
     }
   };
 
@@ -164,7 +176,7 @@ export default function App() {
           editingTask={editingTask}
         />
       ) : showStats ? (
-        <Stats onBack={() => setShowStats(false)} />
+        <Stats onBack={() => setShowStats(false)} tasks={tasks} />
       ) : (
         <Home
           tasks={tasks}

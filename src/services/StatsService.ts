@@ -173,4 +173,27 @@ export class StatsService {
       throw error; // エラーを上位に伝播
     }
   }
+
+  static async updateTaskName(taskId: string, newName: string): Promise<void> {
+    try {
+      // 1. 全てのセッションを取得
+      const sessions = await this.getSessions();
+
+      // 2. 指定されたtaskIdに一致するセッションのタスク名を更新
+      const updatedSessions = sessions.map((session) => {
+        if (session.taskId === taskId) {
+          return { ...session, taskType: newName };
+        }
+        return session;
+      });
+
+      // 3. 更新されたセッションを保存
+      await this.saveSessions(updatedSessions);
+
+      console.log(`タスク "${taskId}" の名前を "${newName}" に更新しました`);
+    } catch (error) {
+      console.error("タスク名の更新に失敗しました:", error);
+      throw error;
+    }
+  }
 }

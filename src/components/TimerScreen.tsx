@@ -20,7 +20,6 @@ import {
 import { SettingsModal } from "./SettingsModal";
 import { loadSettings, saveSettings } from "../utils/storage";
 import { StatsService } from "../services/StatsService";
-import { Task } from "../types/stats";
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({
   task,

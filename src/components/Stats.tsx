@@ -41,7 +41,12 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate, tasks }) => {
       }[selectedPeriod];
 
       const newStats = await StatsService.getStats(days);
-      if (tasks && tasks.length > 0 && newStats.taskDistribution.length > 0) {
+      if (
+        tasks &&
+        Array.isArray(tasks) &&
+        tasks.length > 0 &&
+        newStats.taskDistribution.length > 0
+      ) {
         newStats.taskDistribution = newStats.taskDistribution.map((dist) => {
           const task = tasks.find((t) => t.id === dist.taskId);
           return {
@@ -62,9 +67,37 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate, tasks }) => {
     }
   }, [selectedPeriod, onUpdate, tasks]);
 
+  const refreshStats = () => {
+    if (stats && tasks && Array.isArray(tasks) && tasks.length > 0) {
+      const updatedStats = { ...stats };
+      updatedStats.taskDistribution = updatedStats.taskDistribution.map(
+        (dist) => {
+          const task = tasks.find((t) => t.id === dist.taskId);
+          return {
+            ...dist,
+            taskType: task?.name || dist.taskType,
+          };
+        }
+      );
+      setStats(updatedStats);
+      console.log("Stats refreshed with latest task names");
+    }
+  };
+
+  useEffect(() => {
+    if (tasks && Array.isArray(tasks) && !loading) {
+      refreshStats();
+    }
+  }, [tasks]);
+
   useEffect(() => {
     loadStats();
   }, [selectedPeriod, loadStats]);
+
+  useEffect(() => {
+    // デバッグ用：tasksプロップの内容を確認
+    console.log("Stats received tasks:", tasks);
+  }, [tasks]);
 
   const getChartData = () => {
     if (!stats) return null;
@@ -92,8 +125,24 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate, tasks }) => {
       (a, b) => b.sessionCount - a.sessionCount
     );
 
+    // デバッグ用：マッチングの様子を確認
+    console.log("Task distribution:", sortedDistribution);
+
     return {
-      labels: sortedDistribution.map((task) => task.taskType),
+      labels: sortedDistribution.map((task) => {
+        // tasks 配列が存在するか確認してから処理
+        if (!tasks || tasks.length === 0) {
+          return task.taskType; // タスクリストがない場合はそのまま表示
+        }
+
+        // タスク名の表示を強化
+        const matchingTask = tasks.find((t) => t.id === task.taskId);
+        const displayName = matchingTask ? matchingTask.name : task.taskType;
+        // 長いタスク名を省略表示
+        return displayName.length > 10
+          ? displayName.substring(0, 8) + "..."
+          : displayName;
+      }),
       datasets: [
         {
           data: sortedDistribution.map((task) => task.sessionCount),
