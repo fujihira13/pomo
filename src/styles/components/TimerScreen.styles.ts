@@ -145,4 +145,29 @@ export const timerScreenStyles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     fontWeight: "bold",
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  levelUpModal: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: spacing.lg,
+    alignItems: "center",
+    width: "80%",
+    maxWidth: 300,
+  },
+  levelUpTitle: {
+    ...typography.h2,
+    color: colors.primary,
+    marginVertical: spacing.md,
+  },
+  levelUpMessage: {
+    ...typography.body,
+    color: colors.text.primary,
+    textAlign: "center",
+    marginBottom: spacing.md,
+  },
 });

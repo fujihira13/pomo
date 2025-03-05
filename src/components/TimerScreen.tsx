@@ -7,6 +7,7 @@ import {
   Platform,
   StatusBar,
   Alert,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
@@ -44,6 +45,8 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
   >("work");
   const [completedSessions, setCompletedSessions] = useState(0);
   const [currentTask, setCurrentTask] = useState(task);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [levelUpMessage, setLevelUpMessage] = useState("");
 
   // アプリ設定の読み込み
   useEffect(() => {
@@ -127,6 +130,19 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     }
   };
 
+  // レベルアップモーダルを表示する関数
+  const showLevelUpNotification = (taskName: string, level: number) => {
+    // メッセージを設定
+    setLevelUpMessage(`「${taskName}」のレベルが${level}に上がりました！`);
+    // モーダルを表示
+    setShowLevelUpModal(true);
+
+    // 2秒後に自動的にモーダルを閉じる
+    setTimeout(() => {
+      setShowLevelUpModal(false);
+    }, 2000);
+  };
+
   const handleSessionComplete = useCallback(async () => {
     // 一時的にタイマーを停止
     setIsRunning(false);
@@ -188,12 +204,8 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
         // レベルアップした場合
         if (didLevelUp) {
-          // レベルアップ通知
-          Alert.alert(
-            "レベルアップ！",
-            `「${currentTask.name}」のレベルが${level}に上がりました！`,
-            [{ text: "OK", onPress: () => {} }]
-          );
+          // レベルアップ通知（1秒後に自動的に閉じる）
+          showLevelUpNotification(currentTask.name, level);
         }
 
         // セッション数を更新
@@ -469,11 +481,8 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
               // レベルアップした場合
               if (didLevelUp) {
-                Alert.alert(
-                  "レベルアップ！",
-                  `「${currentTask.name}」のレベルが${level}に上がりました！`,
-                  [{ text: "OK", onPress: () => {} }]
-                );
+                // 新しいレベルアップ通知を使用
+                showLevelUpNotification(currentTask.name, level);
               }
             }}
           >
@@ -489,6 +498,22 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         onSave={handleSaveSettings}
         task={task}
       />
+
+      {/* レベルアップモーダル */}
+      <Modal
+        transparent={true}
+        visible={showLevelUpModal}
+        animationType="fade"
+        onRequestClose={() => setShowLevelUpModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.levelUpModal}>
+            <Ionicons name="trophy" size={40} color="#FFD700" />
+            <Text style={styles.levelUpTitle}>レベルアップ！</Text>
+            <Text style={styles.levelUpMessage}>{levelUpMessage}</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
