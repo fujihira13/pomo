@@ -317,7 +317,7 @@ export const Stats: React.FC<StatsProps> = ({ onBack, onUpdate, tasks }) => {
                       barPercentage: 0.7,
                     }}
                     style={styles.chart}
-                    withHorizontalLabels={true}
+                    withHorizontalLabels={false}
                     flatColor={true}
                   />
                 ) : (
