@@ -1,9 +1,9 @@
 export interface Session {
   id: string;
   taskId: string;
+  taskType: string;
   timestamp: number;
   duration: number;
-  taskType: string;
   experiencePoints: number;
 }
 
@@ -15,8 +15,8 @@ export interface DailyStats {
 }
 
 export interface TaskDistribution {
-  taskType: string;
   taskId: string;
+  taskType: string;
   sessionCount: number;
 }
 

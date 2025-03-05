@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,16 +10,55 @@ import {
   StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { StatsService } from "../services/StatsService";
+import { Session } from "../types/stats";
 
 interface StatsScreenProps {
   onBack: () => void;
+  taskId?: string; // タスクIDを追加（オプショナル）
 }
 
-export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack }) => {
-  // モックデータ
+export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, taskId }) => {
+  // 実際のデータを保存するための状態
+  const [completedSessions, setCompletedSessions] = useState<number>(0);
+  const [totalTime, setTotalTime] = useState<string>("0h");
+
+  // コンポーネントがマウントされたときに統計データを取得
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // すべてのセッションを取得
+        const allSessions = await StatsService.getAllSessions();
+
+        // タスクIDが指定されている場合は、そのタスクのセッションのみをフィルタリング
+        const sessions = taskId
+          ? allSessions.filter((session) => session.taskId === taskId)
+          : allSessions;
+
+        // そのタスクの完了セッション数
+        setCompletedSessions(sessions.length);
+
+        // そのタスクの総学習時間を計算（秒単位）
+        const totalSeconds = sessions.reduce(
+          (total: number, session: Session) => {
+            return total + session.duration;
+          },
+          0
+        );
+
+        // 時間に変換（小数点以下は切り捨て）
+        const hours = Math.floor(totalSeconds / 3600);
+        setTotalTime(`${hours}h`);
+      } catch (error) {
+        console.error("統計データの取得に失敗しました:", error);
+      }
+    };
+
+    fetchStats();
+  }, [taskId]);
+
+  // モックデータ (スキルとクエストの部分は維持)
   const stats = {
-    completedSessions: 142,
-    totalTime: "59h",
     currentSkills: [
       { name: "集中の探求", level: 3, progress: 15 },
       { name: "時間操作", level: 2, progress: 10 },
@@ -68,11 +107,11 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack }) => {
 
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{stats.completedSessions}</Text>
+            <Text style={styles.statValue}>{completedSessions}</Text>
             <Text style={styles.statLabel}>完了セッション</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{stats.totalTime}</Text>
+            <Text style={styles.statValue}>{totalTime}</Text>
             <Text style={styles.statLabel}>総学習時間</Text>
           </View>
         </View>

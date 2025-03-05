@@ -196,4 +196,17 @@ export class StatsService {
       throw error;
     }
   }
+
+  static async getAllSessions(): Promise<Session[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEY);
+      if (data) {
+        return JSON.parse(data);
+      }
+      return [];
+    } catch (error) {
+      console.error("セッションの取得に失敗しました:", error);
+      return [];
+    }
+  }
 }

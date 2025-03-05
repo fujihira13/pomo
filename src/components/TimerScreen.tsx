@@ -261,6 +261,12 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
+  // タスクIDを使わずにStatsScreenを表示するハンドラー
+  const handleShowStats = () => {
+    // 引数なしで呼び出し
+    onShowStats();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View
@@ -340,7 +346,10 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
             <Text style={styles.experienceText}>0 / 100</Text>
           </View>
 
-          <TouchableOpacity style={styles.statsButton} onPress={onShowStats}>
+          <TouchableOpacity
+            style={styles.statsButton}
+            onPress={handleShowStats}
+          >
             <Text style={styles.statsButtonText}>ステータスを見る</Text>
           </TouchableOpacity>
         </View>

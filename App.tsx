@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, StyleSheet } from "react-native";
+import { SafeAreaView, StyleSheet, StatusBar } from "react-native";
 import { Home } from "./src/components/Home";
 import { TimerScreen } from "./src/components/TimerScreen";
 import { NewTask } from "./src/components/NewTask";
@@ -55,9 +55,10 @@ const getJobTypeFromName = (japaneseName: string): string => {
 };
 
 export default function App() {
+  const [currentScreen, setCurrentScreen] = useState<
+    "tasks" | "timer" | "stats" | "newTask"
+  >("tasks");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [showNewTask, setShowNewTask] = useState(false);
-  const [showStats, setShowStats] = useState(false);
   const [showTimerStats, setShowTimerStats] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -98,7 +99,6 @@ export default function App() {
       },
     };
     setTasks([...tasks, newTask]);
-    setShowNewTask(false);
   };
 
   const handleEditTask = (task: Task) => {
@@ -109,7 +109,7 @@ export default function App() {
       jobType: getJobTypeFromName(task.job.type),
     };
     setEditingTask(editTask);
-    setShowNewTask(true);
+    setCurrentScreen("newTask");
   };
 
   const handleUpdateTask = async (
@@ -141,7 +141,6 @@ export default function App() {
         );
         setTasks(updatedTasks);
         setEditingTask(null);
-        setShowNewTask(false);
       } catch (error) {
         console.error("タスク更新中にエラーが発生しました:", error);
         // エラー通知を表示するなどの追加処理
@@ -154,37 +153,74 @@ export default function App() {
     setTasks(updatedTasks);
   };
 
+  // ホーム画面から統計画面に移動する関数
+  const handleShowGlobalStats = () => {
+    setCurrentScreen("stats");
+  };
+
+  // タイマー画面からタスク固有の統計画面に移動する関数
+  const handleShowTaskStats = () => {
+    setShowTimerStats(true);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {selectedTask ? (
-        showTimerStats ? (
-          <StatsScreen onBack={() => setShowTimerStats(false)} />
+      <StatusBar barStyle="light-content" />
+
+      {/* ホーム画面 */}
+      {currentScreen === "tasks" && (
+        <Home
+          tasks={tasks}
+          onTaskSelect={(task) => {
+            setSelectedTask(task);
+            setCurrentScreen("timer");
+          }}
+          onEditTask={handleEditTask}
+          onDeleteTask={handleDeleteTask}
+          onNewTask={() => setCurrentScreen("newTask")}
+          onShowStats={handleShowGlobalStats}
+        />
+      )}
+
+      {/* タイマー画面またはタスク固有の統計画面 */}
+      {currentScreen === "timer" &&
+        selectedTask &&
+        (showTimerStats ? (
+          <StatsScreen
+            onBack={() => {
+              setShowTimerStats(false);
+            }}
+            taskId={selectedTask.id}
+          />
         ) : (
           <TimerScreen
             task={selectedTask}
-            onBack={() => setSelectedTask(null)}
-            onShowStats={() => setShowTimerStats(true)}
+            onBack={() => setCurrentScreen("tasks")}
+            onShowStats={handleShowTaskStats}
           />
-        )
-      ) : showNewTask ? (
+        ))}
+
+      {/* 全体の統計画面 */}
+      {currentScreen === "stats" && (
+        <Stats onBack={() => setCurrentScreen("tasks")} tasks={tasks} />
+      )}
+
+      {/* 新規タスク作成/編集画面 - モーダルからフル画面に変更 */}
+      {currentScreen === "newTask" && (
         <NewTask
           onClose={() => {
-            setShowNewTask(false);
+            setCurrentScreen("tasks");
             setEditingTask(null);
           }}
-          onSave={editingTask ? handleUpdateTask : handleSaveTask}
+          onSave={(taskName, taskType, jobType) => {
+            if (editingTask) {
+              handleUpdateTask(taskName, taskType, jobType);
+            } else {
+              handleSaveTask(taskName, taskType, jobType);
+            }
+            setCurrentScreen("tasks");
+          }}
           editingTask={editingTask}
-        />
-      ) : showStats ? (
-        <Stats onBack={() => setShowStats(false)} tasks={tasks} />
-      ) : (
-        <Home
-          tasks={tasks}
-          onTaskSelect={setSelectedTask}
-          onEditTask={handleEditTask}
-          onDeleteTask={handleDeleteTask}
-          onNewTask={() => setShowNewTask(true)}
-          onShowStats={() => setShowStats(true)}
         />
       )}
     </SafeAreaView>
