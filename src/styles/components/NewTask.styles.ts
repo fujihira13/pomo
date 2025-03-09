@@ -104,6 +104,30 @@ export const newTaskStyles = StyleSheet.create({
     color: colors.primary,
     fontSize: typography.caption.fontSize,
   },
+  currentJobContainer: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  currentJobText: {
+    color: colors.text.secondary,
+    fontSize: typography.body.fontSize,
+    marginBottom: spacing.md,
+    fontStyle: "italic",
+  },
+  currentJobCard: {
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 8,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    marginTop: spacing.sm,
+  },
+  currentJobName: {
+    ...typography.h2,
+    color: colors.text.primary,
+    textAlign: "center",
+    fontWeight: "bold",
+  },
   saveButton: {
     backgroundColor: colors.primary,
     padding: spacing.md,

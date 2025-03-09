@@ -2,112 +2,42 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Platform,
-  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import type { Task } from "../types/models/Task";
-import type { IconName } from "../types/models/IconName";
-
-type JobIconName =
-  | "shield-outline"
-  | "flash-outline"
-  | "heart-outline"
-  | "school-outline";
-
-interface TaskType {
-  id: string;
-  icon: IconName;
-  label: string;
-}
-
-interface JobType {
-  id: string;
-  icon: JobIconName;
-  name: string;
-  bonus?: string;
-  description?: string;
-  tags?: string[];
-}
-
-interface NewTaskProps {
-  onClose: () => void;
-  onSave: (taskName: string, taskType: string, jobType: string) => void;
-  editingTask?: Task | null;
-}
+import { newTaskStyles } from "../styles/components/NewTask.styles";
+import {
+  getTaskTypes,
+  getJobTypes,
+  getInitialJobType,
+} from "../utils/taskUtils";
+import { NewTaskProps } from "../types/components/NewTask.types";
 
 export const NewTask: React.FC<NewTaskProps> = ({
   onClose,
   onSave,
   editingTask,
 }) => {
-  // 既存タスクが「賢者」だった場合は、一時的に「魔法使い」に設定
-  // （次回リリースで「賢者」を実装するため）
-  const initialJobType =
-    editingTask?.jobType === "sage" ? "mage" : editingTask?.jobType || "";
-
+  // 初期値の設定
+  const initialJobType = getInitialJobType(editingTask?.jobType);
   const [taskName, setTaskName] = useState(editingTask?.name || "");
   const [selectedType, setSelectedType] = useState(editingTask?.taskType || "");
   const [selectedJob, setSelectedJob] = useState(initialJobType);
 
-  const taskTypes: TaskType[] = [
-    { id: "programming", icon: "code-outline", label: "プログラミング" },
-    { id: "reading", icon: "book-outline", label: "読書" },
-    { id: "game", icon: "barbell-outline", label: "運動" },
-    { id: "music", icon: "musical-notes-outline", label: "音楽" },
-    { id: "art", icon: "color-palette-outline", label: "アート" },
-    { id: "study", icon: "time-outline", label: "学習" },
-  ];
+  // タスクタイプと職業タイプの取得
+  const taskTypes = getTaskTypes();
+  const jobTypes = getJobTypes();
 
-  const jobTypes: JobType[] = [
-    {
-      id: "warrior",
-      icon: "shield-outline",
-      name: "戦士",
-      // 次回リリースで職業の特殊能力を実装予定
-      // bonus: "集中力持続時間+20%",
-      // description: "長時間の学習に強い、集中力の高さが魅力。",
-      // tags: ["根性の一撃", "集中力の極"],
-    },
-    {
-      id: "mage",
-      icon: "flash-outline",
-      name: "魔法使い",
-      // 次回リリースで職業の特殊能力を実装予定
-      // bonus: "集中経験値+30%",
-      // description: "知識の吸収力が高い、より多くの経験値を獲得。",
-      // tags: ["知恵の魔法", "記憶強化"],
-    },
-    {
-      id: "priest",
-      icon: "heart-outline",
-      name: "僧侶",
-      // 次回リリースで職業の特殊能力を実装予定
-      // bonus: "回復力+40%",
-      // description: "体感効果が高い、集中学習でも疲れにくい。",
-      // tags: ["癒しの力", "精神統一"],
-    },
-    /* 次回リリースで「賢者」職業を実装予定
-    {
-      id: "sage",
-      icon: "school-outline",
-      name: "賢者",
-      // bonus: "スキル習得速度+25%",
-      // description: "新しい技術の習得が早い、複数の分野に強い。",
-      // tags: ["全知の眼", "習得加速"],
-    },
-    */
-  ];
-
+  /**
+   * タスクを保存する処理
+   */
   const handleSave = () => {
     // 編集モードの場合は元の職業タイプを使用
     if (editingTask) {
       if (taskName && selectedType) {
-        onSave(taskName, selectedType, selectedJob); // selectedJobはinitialJobTypeから初期化されているので保持される
+        onSave(taskName, selectedType, selectedJob);
         onClose();
       }
     } else {
@@ -119,257 +49,131 @@ export const NewTask: React.FC<NewTaskProps> = ({
     }
   };
 
+  // 保存ボタンが無効かどうかを判定
+  const isSaveButtonDisabled = editingTask
+    ? !taskName || !selectedType // 編集モードの場合はタスク名とアイコンが必須
+    : !taskName || !selectedType || !selectedJob; // 新規作成モードの場合はタスク名、アイコン、職業が必須
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
+    <ScrollView style={newTaskStyles.container}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
+        <Text style={newTaskStyles.title}>
           {editingTask ? "タスクを編集" : "新規タスク"}
         </Text>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <TouchableOpacity
+          style={{ padding: 8, borderRadius: 8, backgroundColor: "#2A2F45" }}
+          onPress={onClose}
+        >
           <Ionicons name="close" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
       <TextInput
-        style={styles.input}
+        style={newTaskStyles.input}
         placeholder="タスクの名前を入力"
         placeholderTextColor="#666"
         value={taskName}
         onChangeText={setTaskName}
       />
 
-      <Text style={styles.subtitle}>アイコン</Text>
-      <View style={styles.iconGrid}>
+      <Text style={newTaskStyles.subtitle}>アイコン</Text>
+      <View style={newTaskStyles.iconGrid}>
         {taskTypes.map((type) => (
           <TouchableOpacity
             key={type.id}
             style={[
-              styles.iconButton,
-              selectedType === type.id && styles.selectedIcon,
+              newTaskStyles.iconButton,
+              selectedType === type.id && newTaskStyles.selectedIcon,
             ]}
             onPress={() => setSelectedType(type.id)}
           >
-            <Ionicons name={type.icon} size={24} color="#FFFFFF" />
-            <Text style={styles.iconLabel}>{type.label}</Text>
+            <Ionicons name={type.icon} size={28} color="#FFFFFF" />
+            <Text style={newTaskStyles.iconLabel}>{type.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* 新規タスク作成時のみ職業選択を表示 */}
+      {/* 編集モードでない場合のみ職業選択部分を表示 */}
       {!editingTask && (
         <>
-          <Text style={styles.subtitle}>職業を選択</Text>
-          <View style={styles.jobGrid}>
+          <Text style={newTaskStyles.subtitle}>職業</Text>
+          <View style={newTaskStyles.jobList}>
             {jobTypes.map((job) => (
               <TouchableOpacity
                 key={job.id}
                 style={[
-                  styles.jobCard,
-                  selectedJob === job.id && styles.selectedJob,
+                  newTaskStyles.jobCard,
+                  selectedJob === job.id && newTaskStyles.selectedJob,
                 ]}
                 onPress={() => setSelectedJob(job.id)}
               >
-                <View style={styles.jobHeader}>
-                  <View style={styles.jobIconContainer}>
+                <View style={newTaskStyles.jobHeader}>
+                  <View style={newTaskStyles.jobIconContainer}>
                     <Ionicons name={job.icon} size={24} color="#FFD700" />
                   </View>
-                  <View style={styles.jobInfo}>
-                    <Text style={styles.jobName}>{job.name}</Text>
-                    {job.bonus && (
-                      <Text style={styles.jobBonus}>{job.bonus}</Text>
-                    )}
+                  <View style={newTaskStyles.jobInfo}>
+                    <Text style={newTaskStyles.jobName}>{job.name}</Text>
+                    {/* 次回リリースで表示予定
+                    <Text style={newTaskStyles.jobBonus}>{job.bonus}</Text>
+                    */}
                   </View>
                 </View>
-                {/* 説明文とタグは次回リリースで実装予定 */}
-                {/* 
-                <Text style={styles.jobDescription}>{job.description}</Text>
-                <View style={styles.tagContainer}>
-                  {job.tags?.map((tag, index) => (
-                    <View key={index} style={styles.tag}>
-                      <Text style={styles.tagText}>{tag}</Text>
-                    </View>
-                  ))}
-                </View>
+                {/* 次回リリースで表示予定
+                {job.description && (
+                  <Text style={newTaskStyles.jobDescription}>
+                    {job.description}
+                  </Text>
+                )}
+                {job.tags && job.tags.length > 0 && (
+                  <View style={newTaskStyles.tagContainer}>
+                    {job.tags.map((tag, index) => (
+                      <View key={index} style={newTaskStyles.tag}>
+                        <Text style={newTaskStyles.tagText}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
                 */}
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={styles.comingSoonText}>
-            ※ 新たな職業は次回アップデートで実装予定です
-          </Text>
         </>
+      )}
+
+      {/* 編集モードでは現在選択されている職業を表示 */}
+      {editingTask && (
+        <View style={newTaskStyles.currentJobContainer}>
+          <Text style={newTaskStyles.subtitle}>現在の職業</Text>
+          <Text style={newTaskStyles.currentJobText}>
+            この項目は編集できません。タスクの職業は作成時のみ選択できます。
+          </Text>
+          <View style={newTaskStyles.currentJobCard}>
+            <Text style={newTaskStyles.currentJobName}>
+              {jobTypes.find((job) => job.id === selectedJob)?.name ||
+                "不明な職業"}
+            </Text>
+          </View>
+        </View>
       )}
 
       <TouchableOpacity
         style={[
-          styles.saveButton,
-          editingTask
-            ? !taskName || !selectedType
-              ? styles.disabledButton
-              : null
-            : !taskName || !selectedType || !selectedJob
-            ? styles.disabledButton
-            : null,
+          newTaskStyles.saveButton,
+          isSaveButtonDisabled && newTaskStyles.disabledButton,
         ]}
         onPress={handleSave}
-        disabled={
-          editingTask
-            ? !taskName || !selectedType
-            : !taskName || !selectedType || !selectedJob
-        }
+        disabled={isSaveButtonDisabled}
       >
-        <Text style={styles.saveButtonText}>
+        <Text style={newTaskStyles.saveButtonText}>
           {editingTask ? "更新" : "作成"}
         </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#171923",
-    paddingTop: Platform.OS === "ios" ? 0 : StatusBar.currentHeight,
-    paddingHorizontal: 16,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 16,
-    paddingBottom: 8,
-    marginBottom: 16,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "#2A2F45",
-  },
-  subtitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  input: {
-    backgroundColor: "#2A2F45",
-    borderRadius: 8,
-    padding: 12,
-    color: "#FFFFFF",
-    fontSize: 16,
-  },
-  iconGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  iconButton: {
-    backgroundColor: "#2A2F45",
-    width: "30%",
-    aspectRatio: 1,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 12,
-  },
-  selectedIcon: {
-    backgroundColor: "#4A5568",
-    borderWidth: 2,
-    borderColor: "#FFD700",
-  },
-  iconLabel: {
-    color: "#FFFFFF",
-    marginTop: 8,
-    fontSize: 12,
-  },
-  jobGrid: {
-    gap: 12,
-  },
-  jobCard: {
-    backgroundColor: "#2A2F45",
-    borderRadius: 8,
-    padding: 16,
-  },
-  selectedJob: {
-    backgroundColor: "#4A5568",
-    borderWidth: 2,
-    borderColor: "#FFD700",
-  },
-  jobHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  jobIconContainer: {
-    width: 40,
-    height: 40,
-    backgroundColor: "#171923",
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  jobInfo: {
-    flex: 1,
-  },
-  jobName: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  jobBonus: {
-    color: "#8F95B2",
-    fontSize: 14,
-  },
-  // 次回リリースで使用予定のスタイル
-  jobDescription: {
-    color: "#8F95B2",
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  tagContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  tag: {
-    backgroundColor: "#171923",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-  },
-  tagText: {
-    color: "#FFD700",
-    fontSize: 12,
-  },
-  comingSoonText: {
-    color: "#8F95B2",
-    fontSize: 14,
-    fontStyle: "italic",
-    textAlign: "center",
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  saveButton: {
-    backgroundColor: "#FFD700",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 32,
-    marginBottom: 32,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    color: "#171923",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-});

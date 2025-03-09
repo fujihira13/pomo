@@ -11,14 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { settingsModalStyles as styles } from "../styles/components/SettingsModal.styles";
 import { TimerSettings, DEFAULT_SETTINGS } from "../types/models/Settings";
-
-interface SettingsModalProps {
-  visible: boolean;
-  settings: TimerSettings;
-  onClose: () => void;
-  onSave: (settings: TimerSettings) => void;
-  task: { name: string };
-}
+import { SettingsModalProps } from "../types/components/SettingsModal.types";
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   visible,

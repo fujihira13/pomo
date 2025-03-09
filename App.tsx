@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, StyleSheet, StatusBar } from "react-native";
+import { SafeAreaView, StatusBar } from "react-native";
 import { Home } from "./src/components/Home";
 import { TimerScreen } from "./src/components/TimerScreen";
 import { NewTask } from "./src/components/NewTask";
@@ -10,6 +10,7 @@ import type { IconName } from "./src/types/models/IconName";
 import { saveTasks, loadTasks } from "./src/utils/storage";
 import { StatsService } from "./src/services/StatsService";
 import { calculateExpForNextLevel } from "./src/utils/levelUtils";
+import { appStyles } from "./src/styles/components/App.styles";
 
 const JOB_NAMES: Record<string, string> = {
   warrior: "戦士",
@@ -180,7 +181,7 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={appStyles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* ホーム画面 */}
@@ -244,10 +245,3 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#171923",
-  },
-});

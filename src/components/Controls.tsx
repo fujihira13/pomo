@@ -1,5 +1,6 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity, View, Text } from "react-native";
+import { TouchableOpacity, View, Text } from "react-native";
+import { controlsStyles } from "../styles/components/Controls.styles";
 
 interface ControlsProps {
   isRunning: boolean;
@@ -13,45 +14,21 @@ export const Controls: React.FC<ControlsProps> = ({
   onReset,
 }) => {
   return (
-    <View style={styles.container}>
+    <View style={controlsStyles.container}>
       <TouchableOpacity
-        style={[styles.button, styles.primaryButton]}
+        style={[controlsStyles.button, controlsStyles.primaryButton]}
         onPress={onStartPause}
       >
-        <Text style={styles.buttonText}>{isRunning ? "Pause" : "Start"}</Text>
+        <Text style={controlsStyles.buttonText}>
+          {isRunning ? "Pause" : "Start"}
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.button, styles.secondaryButton]}
+        style={[controlsStyles.button, controlsStyles.secondaryButton]}
         onPress={onReset}
       >
-        <Text style={styles.buttonText}>Reset</Text>
+        <Text style={controlsStyles.buttonText}>Reset</Text>
       </TouchableOpacity>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 30,
-  },
-  button: {
-    paddingHorizontal: 25,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginHorizontal: 10,
-  },
-  primaryButton: {
-    backgroundColor: "#4CAF50",
-  },
-  secondaryButton: {
-    backgroundColor: "#f44336",
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-});
