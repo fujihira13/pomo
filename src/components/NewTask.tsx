@@ -29,9 +29,9 @@ interface JobType {
   id: string;
   icon: JobIconName;
   name: string;
-  bonus: string;
-  description: string;
-  tags: string[];
+  bonus?: string;
+  description?: string;
+  tags?: string[];
 }
 
 interface NewTaskProps {
@@ -57,7 +57,7 @@ export const NewTask: React.FC<NewTaskProps> = ({
   const taskTypes: TaskType[] = [
     { id: "programming", icon: "code-outline", label: "プログラミング" },
     { id: "reading", icon: "book-outline", label: "読書" },
-    { id: "game", icon: "game-controller-outline", label: "運動" },
+    { id: "game", icon: "barbell-outline", label: "運動" },
     { id: "music", icon: "musical-notes-outline", label: "音楽" },
     { id: "art", icon: "color-palette-outline", label: "アート" },
     { id: "study", icon: "time-outline", label: "学習" },
@@ -68,34 +68,37 @@ export const NewTask: React.FC<NewTaskProps> = ({
       id: "warrior",
       icon: "shield-outline",
       name: "戦士",
-      bonus: "集中力持続時間+20%",
-      description: "長時間の学習に強い、集中力の高さが魅力。",
-      tags: ["根性の一撃", "集中力の極"],
+      // 次回リリースで職業の特殊能力を実装予定
+      // bonus: "集中力持続時間+20%",
+      // description: "長時間の学習に強い、集中力の高さが魅力。",
+      // tags: ["根性の一撃", "集中力の極"],
     },
     {
       id: "mage",
       icon: "flash-outline",
       name: "魔法使い",
-      bonus: "集中経験値+30%",
-      description: "知識の吸収力が高い、より多くの経験値を獲得。",
-      tags: ["知恵の魔法", "記憶強化"],
+      // 次回リリースで職業の特殊能力を実装予定
+      // bonus: "集中経験値+30%",
+      // description: "知識の吸収力が高い、より多くの経験値を獲得。",
+      // tags: ["知恵の魔法", "記憶強化"],
     },
     {
       id: "priest",
       icon: "heart-outline",
       name: "僧侶",
-      bonus: "回復力+40%",
-      description: "体感効果が高い、集中学習でも疲れにくい。",
-      tags: ["癒しの力", "精神統一"],
+      // 次回リリースで職業の特殊能力を実装予定
+      // bonus: "回復力+40%",
+      // description: "体感効果が高い、集中学習でも疲れにくい。",
+      // tags: ["癒しの力", "精神統一"],
     },
-    /* 賢者は次回リリースで実装予定
+    /* 次回リリースで「賢者」職業を実装予定
     {
       id: "sage",
       icon: "school-outline",
       name: "賢者",
-      bonus: "スキル習得速度+25%",
-      description: "新しい技術の習得が早い、複数の分野に強い。",
-      tags: ["全知の眼", "習得加速"],
+      // bonus: "スキル習得速度+25%",
+      // description: "新しい技術の習得が早い、複数の分野に強い。",
+      // tags: ["全知の眼", "習得加速"],
     },
     */
   ];
@@ -171,22 +174,27 @@ export const NewTask: React.FC<NewTaskProps> = ({
                   </View>
                   <View style={styles.jobInfo}>
                     <Text style={styles.jobName}>{job.name}</Text>
-                    <Text style={styles.jobBonus}>{job.bonus}</Text>
+                    {job.bonus && (
+                      <Text style={styles.jobBonus}>{job.bonus}</Text>
+                    )}
                   </View>
                 </View>
+                {/* 説明文とタグは次回リリースで実装予定 */}
+                {/* 
                 <Text style={styles.jobDescription}>{job.description}</Text>
                 <View style={styles.tagContainer}>
-                  {job.tags.map((tag, index) => (
+                  {job.tags?.map((tag, index) => (
                     <View key={index} style={styles.tag}>
                       <Text style={styles.tagText}>{tag}</Text>
                     </View>
                   ))}
                 </View>
+                */}
               </TouchableOpacity>
             ))}
           </View>
           <Text style={styles.comingSoonText}>
-            ※ 賢者職業は次回アップデートで実装予定です
+            ※ 新たな職業は次回アップデートで実装予定です
           </Text>
         </>
       )}
@@ -316,9 +324,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   jobBonus: {
-    color: "#FFD700",
+    color: "#8F95B2",
     fontSize: 14,
   },
+  // 次回リリースで使用予定のスタイル
   jobDescription: {
     color: "#8F95B2",
     fontSize: 14,

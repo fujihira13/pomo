@@ -35,7 +35,7 @@ const JOB_ICONS: Record<string, IconName> = {
 const TASK_ICONS: Record<string, IconName> = {
   programming: "code-outline",
   reading: "book-outline",
-  game: "game-controller-outline",
+  game: "barbell-outline",
   music: "musical-notes-outline",
   art: "color-palette-outline",
   study: "time-outline",
