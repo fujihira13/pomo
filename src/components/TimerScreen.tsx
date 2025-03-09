@@ -461,7 +461,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
             <Text style={styles.statsButtonText}>ステータスを見る</Text>
           </TouchableOpacity>
 
-          {/* デバッグボタン - 実際のアプリでは削除してください */}
+          {/* デバッグ用ボタン - 本番環境では非表示
           <TouchableOpacity
             style={[styles.statsButton, { marginTop: 10 }]}
             onPress={() => {
@@ -496,6 +496,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           >
             <Text style={styles.statsButtonText}>+100経験値（デバッグ用）</Text>
           </TouchableOpacity>
+          */}
         </View>
       </View>
 

@@ -45,9 +45,14 @@ export const NewTask: React.FC<NewTaskProps> = ({
   onSave,
   editingTask,
 }) => {
+  // 既存タスクが「賢者」だった場合は、一時的に「魔法使い」に設定
+  // （次回リリースで「賢者」を実装するため）
+  const initialJobType =
+    editingTask?.jobType === "sage" ? "mage" : editingTask?.jobType || "";
+
   const [taskName, setTaskName] = useState(editingTask?.name || "");
   const [selectedType, setSelectedType] = useState(editingTask?.taskType || "");
-  const [selectedJob, setSelectedJob] = useState(editingTask?.jobType || "");
+  const [selectedJob, setSelectedJob] = useState(initialJobType);
 
   const taskTypes: TaskType[] = [
     { id: "programming", icon: "code-outline", label: "プログラミング" },
@@ -83,6 +88,7 @@ export const NewTask: React.FC<NewTaskProps> = ({
       description: "体感効果が高い、集中学習でも疲れにくい。",
       tags: ["癒しの力", "精神統一"],
     },
+    /* 賢者は次回リリースで実装予定
     {
       id: "sage",
       icon: "school-outline",
@@ -91,12 +97,22 @@ export const NewTask: React.FC<NewTaskProps> = ({
       description: "新しい技術の習得が早い、複数の分野に強い。",
       tags: ["全知の眼", "習得加速"],
     },
+    */
   ];
 
   const handleSave = () => {
-    if (taskName && selectedType && selectedJob) {
-      onSave(taskName, selectedType, selectedJob);
-      onClose();
+    // 編集モードの場合は元の職業タイプを使用
+    if (editingTask) {
+      if (taskName && selectedType) {
+        onSave(taskName, selectedType, selectedJob); // selectedJobはinitialJobTypeから初期化されているので保持される
+        onClose();
+      }
+    } else {
+      // 新規作成モードの場合
+      if (taskName && selectedType && selectedJob) {
+        onSave(taskName, selectedType, selectedJob);
+        onClose();
+      }
     }
   };
 
@@ -135,47 +151,63 @@ export const NewTask: React.FC<NewTaskProps> = ({
         ))}
       </View>
 
-      <Text style={styles.subtitle}>職業を選択</Text>
-      <View style={styles.jobList}>
-        {jobTypes.map((job) => (
-          <TouchableOpacity
-            key={job.id}
-            style={[
-              styles.jobCard,
-              selectedJob === job.id && styles.selectedJob,
-            ]}
-            onPress={() => setSelectedJob(job.id)}
-          >
-            <View style={styles.jobHeader}>
-              <View style={styles.jobIconContainer}>
-                <Ionicons name={job.icon} size={24} color="#FFD700" />
-              </View>
-              <View style={styles.jobInfo}>
-                <Text style={styles.jobName}>{job.name}</Text>
-                <Text style={styles.jobBonus}>{job.bonus}</Text>
-              </View>
-            </View>
-            <Text style={styles.jobDescription}>{job.description}</Text>
-            <View style={styles.tagContainer}>
-              {job.tags.map((tag, index) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
+      {/* 新規タスク作成時のみ職業選択を表示 */}
+      {!editingTask && (
+        <>
+          <Text style={styles.subtitle}>職業を選択</Text>
+          <View style={styles.jobGrid}>
+            {jobTypes.map((job) => (
+              <TouchableOpacity
+                key={job.id}
+                style={[
+                  styles.jobCard,
+                  selectedJob === job.id && styles.selectedJob,
+                ]}
+                onPress={() => setSelectedJob(job.id)}
+              >
+                <View style={styles.jobHeader}>
+                  <View style={styles.jobIconContainer}>
+                    <Ionicons name={job.icon} size={24} color="#FFD700" />
+                  </View>
+                  <View style={styles.jobInfo}>
+                    <Text style={styles.jobName}>{job.name}</Text>
+                    <Text style={styles.jobBonus}>{job.bonus}</Text>
+                  </View>
                 </View>
-              ))}
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+                <Text style={styles.jobDescription}>{job.description}</Text>
+                <View style={styles.tagContainer}>
+                  {job.tags.map((tag, index) => (
+                    <View key={index} style={styles.tag}>
+                      <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.comingSoonText}>
+            ※ 賢者職業は次回アップデートで実装予定です
+          </Text>
+        </>
+      )}
 
       <TouchableOpacity
         style={[
           styles.saveButton,
-          !taskName || !selectedType || !selectedJob
+          editingTask
+            ? !taskName || !selectedType
+              ? styles.disabledButton
+              : null
+            : !taskName || !selectedType || !selectedJob
             ? styles.disabledButton
             : null,
         ]}
         onPress={handleSave}
-        disabled={!taskName || !selectedType || !selectedJob}
+        disabled={
+          editingTask
+            ? !taskName || !selectedType
+            : !taskName || !selectedType || !selectedJob
+        }
       >
         <Text style={styles.saveButtonText}>
           {editingTask ? "更新" : "作成"}
@@ -248,7 +280,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
   },
-  jobList: {
+  jobGrid: {
     gap: 12,
   },
   jobCard: {
@@ -306,6 +338,14 @@ const styles = StyleSheet.create({
   tagText: {
     color: "#FFD700",
     fontSize: 12,
+  },
+  comingSoonText: {
+    color: "#8F95B2",
+    fontSize: 14,
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 24,
   },
   saveButton: {
     backgroundColor: "#FFD700",

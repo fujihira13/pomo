@@ -141,7 +141,8 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({
     }
   }, [taskId, task]);
 
-  // クエストのデータ（モック）
+  // 次回リリースで実装予定のクエスト機能
+  /*
   const quests = [
     {
       title: "朝の修行",
@@ -165,6 +166,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({
       type: "チャレンジ",
     },
   ];
+  */
 
   return (
     <SafeAreaView style={styles.container}>
@@ -185,7 +187,8 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({
               : JOB_ID_TO_NAME["warrior"] || "冒険者"}
           </Text>
           <Text style={styles.subtitle}>レベル: {task?.level || 1}</Text>
-          <Text style={styles.subtitle}>称号: 時の探究者</Text>
+          {/* 次回リリースで実装予定の称号 */}
+          {/* <Text style={styles.subtitle}>称号: 時の探究者</Text> */}
         </View>
 
         <View style={styles.statsContainer}>
@@ -294,6 +297,8 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({
           </View>
         )}
 
+        {/* 次回リリースで実装予定のクエスト機能 */}
+        {/* 
         <View style={styles.questsSection}>
           <Text style={styles.sectionTitle}>クエスト</Text>
           {quests.map((quest, index) => (
@@ -314,6 +319,7 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({
             </View>
           ))}
         </View>
+        */}
       </ScrollView>
     </SafeAreaView>
   );
