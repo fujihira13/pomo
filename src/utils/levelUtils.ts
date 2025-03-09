@@ -61,3 +61,123 @@ export const updateExperienceAndLevel = (
     didLevelUp,
   };
 };
+
+/**
+ * レベル1から指定したレベルまでに必要な総経験値を計算する関数
+ * @param targetLevel 目標レベル
+ * @returns レベル1から目標レベルまでに必要な経験値の総和
+ */
+export const calculateTotalExpToLevel = (targetLevel: number): number => {
+  let totalExp = 0;
+
+  // レベル1から目標レベルの手前まで必要な経験値を合計
+  for (let level = 1; level < targetLevel; level++) {
+    totalExp += calculateExpForNextLevel(level);
+  }
+
+  console.log(`レベル1→${targetLevel}までの総経験値: ${totalExp}`);
+  return totalExp;
+};
+
+/**
+ * 現在のレベルと経験値から、レベル1からの累積経験値を計算する関数
+ * @param currentLevel 現在のレベル
+ * @param currentExp 現在のレベルでの経験値
+ * @returns レベル1から現在までの累積経験値
+ */
+export const calculateTotalEarnedExp = (
+  currentLevel: number,
+  currentExp: number
+): number => {
+  // レベル1から現在のレベルまでに必要だった総経験値
+  const expToCurrentLevel = calculateTotalExpToLevel(currentLevel);
+
+  // 現在のレベルでの経験値を加算
+  const totalEarnedExp = expToCurrentLevel + currentExp;
+
+  console.log(
+    `レベル1から現在(Lv.${currentLevel}, ${currentExp}exp)までの累積経験値: ${totalEarnedExp}`
+  );
+  return totalEarnedExp;
+};
+
+/**
+ * 現在のレベルから目標レベルまでに必要な合計経験値を計算する関数
+ * @param currentLevel 現在のレベル
+ * @param targetLevel 目標レベル
+ * @returns 必要な合計経験値
+ */
+export const calculateTotalExpToTargetLevel = (
+  currentLevel: number,
+  targetLevel: number
+): number => {
+  if (currentLevel >= targetLevel) return 0;
+
+  let totalExp = 0;
+
+  // デバッグ: パラメータの出力
+  console.log(
+    `calculateTotalExpToTargetLevel: currentLevel=${currentLevel}, targetLevel=${targetLevel}`
+  );
+
+  // 現在のレベルから目標レベルまでの各レベルで必要な経験値を合計
+  for (let level = currentLevel; level < targetLevel; level++) {
+    const expForLevel = calculateExpForNextLevel(level);
+    totalExp += expForLevel;
+    console.log(
+      `レベル${level}→${
+        level + 1
+      }に必要な経験値: ${expForLevel}, 累積経験値: ${totalExp}`
+    );
+  }
+
+  console.log(`目標レベル${targetLevel}までの必要総経験値: ${totalExp}`);
+  return totalExp;
+};
+
+/**
+ * 現在の状態から次のスキルレベルまでの進捗を計算する関数
+ * @param currentLevel 現在のレベル
+ * @param currentExp 現在のレベルでの経験値
+ * @param maxExp 現在のレベルで次のレベルに上がるのに必要な経験値
+ * @param targetLevel 目標レベル（スキル習得レベル）
+ * @returns 進捗情報（パーセンテージと必要な残り経験値）
+ */
+export const calculateProgressToSkillLevel = (
+  currentLevel: number,
+  currentExp: number,
+  maxExp: number,
+  targetLevel: number
+): { progressPercentage: number; remainingExp: number } => {
+  // デバッグ: パラメータの出力
+  console.log(
+    `calculateProgressToSkillLevel: currentLevel=${currentLevel}, currentExp=${currentExp}, maxExp=${maxExp}, targetLevel=${targetLevel}`
+  );
+
+  // 既に目標レベルに達している場合
+  if (currentLevel >= targetLevel) {
+    console.log("既に目標レベル達成済み: 進捗率=100%, 残り経験値=0");
+    return { progressPercentage: 100, remainingExp: 0 };
+  }
+
+  // レベル1から目標レベルまでに必要な総経験値
+  const totalExpToTargetLevel = calculateTotalExpToLevel(targetLevel);
+
+  // レベル1から現在までの累積獲得経験値
+  const totalEarnedExp = calculateTotalEarnedExp(currentLevel, currentExp);
+
+  // 残りの必要経験値
+  const remainingExp = totalExpToTargetLevel - totalEarnedExp;
+
+  // 進捗率（パーセンテージ）
+  const progressPercentage = Math.min(
+    100,
+    Math.max(0, (totalEarnedExp / totalExpToTargetLevel) * 100)
+  );
+
+  console.log(
+    `進捗情報: 目標レベルまでの総経験値=${totalExpToTargetLevel}, 獲得済み累積経験値=${totalEarnedExp}, 残り経験値=${remainingExp}, 進捗率=${progressPercentage}%`
+  );
+
+  return { progressPercentage, remainingExp };
+};

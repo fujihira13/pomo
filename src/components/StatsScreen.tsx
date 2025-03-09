@@ -12,19 +12,59 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { StatsService } from "../services/StatsService";
 import { Session } from "../types/stats";
+import {
+  getAcquiredSkills,
+  getNextSkill,
+  SkillDefinition,
+} from "../data/skills";
+import { Task } from "../types/models/Task";
+import {
+  calculateProgressToSkillLevel,
+  calculateTotalEarnedExp,
+  calculateTotalExpToLevel,
+} from "../utils/levelUtils";
+
+// 日本語の職業名から英語のジョブタイプを取得するマッピング
+const JOB_NAME_TO_ID: Record<string, string> = {
+  戦士: "warrior",
+  魔法使い: "mage",
+  僧侶: "priest",
+  賢者: "sage",
+};
+
+// 英語のジョブタイプから日本語の職業名を取得するマッピング
+const JOB_ID_TO_NAME: Record<string, string> = {
+  warrior: "戦士",
+  mage: "魔法使い",
+  priest: "僧侶",
+  sage: "賢者",
+};
 
 interface StatsScreenProps {
   onBack: () => void;
   taskId?: string; // タスクIDを追加（オプショナル）
+  task?: Task; // タスク情報を追加
 }
 
-export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, taskId }) => {
+export const StatsScreen: React.FC<StatsScreenProps> = ({
+  onBack,
+  taskId,
+  task,
+}) => {
   // 実際のデータを保存するための状態
   const [completedSessions, setCompletedSessions] = useState<number>(0);
   const [totalTime, setTotalTime] = useState<string>("0h");
+  const [acquiredSkills, setAcquiredSkills] = useState<SkillDefinition[]>([]);
+  const [nextSkill, setNextSkill] = useState<SkillDefinition | null>(null);
+  const [progressToNextSkill, setProgressToNextSkill] = useState<number>(0);
+  const [remainingExp, setRemainingExp] = useState<number>(0);
 
   // コンポーネントがマウントされたときに統計データを取得
   useEffect(() => {
+    // デバッグ情報を表示
+    console.log("StatsScreen: タスク情報", task);
+    console.log("StatsScreen: taskId", taskId);
+
     const fetchStats = async () => {
       try {
         // すべてのセッションを取得
@@ -55,38 +95,76 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, taskId }) => {
     };
 
     fetchStats();
-  }, [taskId]);
 
-  // モックデータ (スキルとクエストの部分は維持)
-  const stats = {
-    currentSkills: [
-      { name: "集中の探求", level: 3, progress: 15 },
-      { name: "時間操作", level: 2, progress: 10 },
-    ],
-    quests: [
-      {
-        title: "朝の修行",
-        description: "朝9時までに1セッション完了",
-        reward: "経験値 x1.5",
-        progress: 0,
-        type: "デイリー",
-      },
-      {
-        title: "集中の試練",
-        description: "1週間で20セッション達成",
-        reward: "新スキル解放",
-        progress: 65,
-        type: "ウィークリー",
-      },
-      {
-        title: "不屈の探究者",
-        description: "3日連続で5セッション達成",
-        reward: "称号獲得",
-        progress: 33,
-        type: "チャレンジ",
-      },
-    ],
-  };
+    // タスクとレベルに基づいてスキル情報を取得
+    if (task && task.job && task.job.type) {
+      console.log("StatsScreen: 職業タイプ", task.job.type);
+      console.log("StatsScreen: 現在のレベル", task.level);
+      console.log("StatsScreen: 現在の経験値", task.experience.current);
+      console.log("StatsScreen: 次のレベルまでの経験値", task.experience.max);
+
+      // 日本語の職業名から英語のジョブIDを取得
+      const jobId = JOB_NAME_TO_ID[task.job.type] || task.job.type;
+      console.log("StatsScreen: 変換したジョブID", jobId);
+
+      // 習得済みスキル
+      const acquired = getAcquiredSkills(jobId, task.level);
+      console.log("StatsScreen: 習得済みスキル", acquired);
+      setAcquiredSkills(acquired);
+
+      // 次に習得するスキル
+      const next = getNextSkill(jobId, task.level);
+      console.log("StatsScreen: 次のスキル", next);
+      setNextSkill(next);
+
+      // 次のスキルまでの進捗を計算（経験値ベース）
+      if (next) {
+        const currentLevel = task.level;
+        const nextSkillLevel = next.level;
+
+        // 現在のレベルから次のスキルレベルまでの進捗を計算
+        const { progressPercentage, remainingExp: expRemaining } =
+          calculateProgressToSkillLevel(
+            currentLevel,
+            task.experience.current,
+            task.experience.max,
+            nextSkillLevel
+          );
+
+        console.log("StatsScreen: 進捗率", progressPercentage);
+        console.log("StatsScreen: 残り経験値", expRemaining);
+
+        // 状態を更新
+        setProgressToNextSkill(progressPercentage);
+        setRemainingExp(expRemaining);
+      }
+    }
+  }, [taskId, task]);
+
+  // クエストのデータ（モック）
+  const quests = [
+    {
+      title: "朝の修行",
+      description: "朝9時までに1セッション完了",
+      reward: "経験値 x1.5",
+      progress: 0,
+      type: "デイリー",
+    },
+    {
+      title: "集中の試練",
+      description: "1週間で20セッション達成",
+      reward: "新スキル解放",
+      progress: 65,
+      type: "ウィークリー",
+    },
+    {
+      title: "不屈の探究者",
+      description: "3日連続で5セッション達成",
+      reward: "称号獲得",
+      progress: 33,
+      type: "チャレンジ",
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -101,7 +179,12 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, taskId }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>闇の魔術師</Text>
+          <Text style={styles.title}>
+            {task?.job?.type
+              ? task.job.type
+              : JOB_ID_TO_NAME["warrior"] || "冒険者"}
+          </Text>
+          <Text style={styles.subtitle}>レベル: {task?.level || 1}</Text>
           <Text style={styles.subtitle}>称号: 時の探究者</Text>
         </View>
 
@@ -116,26 +199,104 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onBack, taskId }) => {
           </View>
         </View>
 
-        <View style={styles.skillsSection}>
-          <Text style={styles.sectionTitle}>習得中のスキル</Text>
-          {stats.currentSkills.map((skill, index) => (
-            <View key={index} style={styles.skillItem}>
-              <View style={styles.skillHeader}>
-                <Text style={styles.skillName}>{skill.name}</Text>
-                <Text style={styles.skillLevel}>Lv.{skill.level}</Text>
+        {/* 習得済みスキルセクション */}
+        {acquiredSkills.length > 0 && (
+          <View style={styles.skillsSection}>
+            <Text style={styles.sectionTitle}>習得済みスキル</Text>
+            {acquiredSkills.map((skill, index) => (
+              <View key={index} style={styles.skillItem}>
+                <View style={styles.skillHeader}>
+                  <Text style={styles.skillName}>{skill.name}</Text>
+                  <Text style={styles.skillLevel}>Lv.{skill.level}で習得</Text>
+                </View>
+                <Text style={styles.skillDescription}>{skill.description}</Text>
               </View>
-              <View style={styles.progressBar}>
-                <View
-                  style={[styles.progressFill, { width: `${skill.progress}%` }]}
-                />
+            ))}
+          </View>
+        )}
+
+        {/* 次に習得するスキルセクション */}
+        {nextSkill && (
+          <View style={styles.skillsSection}>
+            <Text style={styles.sectionTitle}>習得中のスキル</Text>
+            <View style={styles.skillItem}>
+              <View style={styles.skillHeader}>
+                <Text style={styles.skillName}>{nextSkill.name}</Text>
+                <Text style={styles.skillLevel}>
+                  Lv.{nextSkill.level}で習得
+                </Text>
+              </View>
+              <Text style={styles.skillDescription}>
+                {nextSkill.description}
+              </Text>
+              <View style={styles.progressBarContainer}>
+                <View style={styles.progressTextContainer}>
+                  <Text style={styles.progressText}>
+                    習得まで: {Math.round(progressToNextSkill)}%
+                  </Text>
+                  <Text style={styles.progressText}>
+                    残り経験値: {remainingExp.toLocaleString()}
+                  </Text>
+                </View>
+                <View style={styles.progressBarWrapper}>
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          width: `${progressToNextSkill}%`,
+                          shadowColor: "#4CAF50",
+                          shadowOffset: { width: 0, height: 0 },
+                          shadowOpacity: 0.8,
+                          shadowRadius: 4,
+                          backgroundColor:
+                            JOB_NAME_TO_ID[task?.job?.type || ""] === "mage"
+                              ? "#8A2BE2"
+                              : JOB_NAME_TO_ID[task?.job?.type || ""] ===
+                                "warrior"
+                              ? "#FF4500"
+                              : JOB_NAME_TO_ID[task?.job?.type || ""] ===
+                                "priest"
+                              ? "#1E90FF"
+                              : JOB_NAME_TO_ID[task?.job?.type || ""] === "sage"
+                              ? "#FFD700"
+                              : "#4CAF50",
+                        },
+                      ]}
+                    >
+                      <View style={styles.progressShine}></View>
+                    </View>
+                  </View>
+                  <Text style={styles.progressPercentage}>
+                    {task ? (
+                      <>
+                        <Text style={styles.currentExpText}>
+                          {calculateTotalEarnedExp(
+                            task.level,
+                            task.experience.current
+                          ).toLocaleString()}
+                        </Text>
+                        <Text> / </Text>
+                        <Text style={styles.totalExpText}>
+                          {calculateTotalExpToLevel(
+                            nextSkill.level
+                          ).toLocaleString()}
+                        </Text>
+                        <Text> 経験値</Text>
+                      </>
+                    ) : (
+                      "0 / 0 経験値"
+                    )}
+                  </Text>
+                </View>
               </View>
             </View>
-          ))}
-        </View>
+          </View>
+        )}
 
         <View style={styles.questsSection}>
           <Text style={styles.sectionTitle}>クエスト</Text>
-          {stats.quests.map((quest, index) => (
+          {quests.map((quest, index) => (
             <View key={index} style={styles.questItem}>
               <View style={styles.questHeader}>
                 <Text style={styles.questTitle}>{quest.title}</Text>
@@ -194,6 +355,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#8F95B2",
     fontSize: 16,
+    marginBottom: 4,
   },
   statsContainer: {
     flexDirection: "row",
@@ -223,6 +385,9 @@ const styles = StyleSheet.create({
   },
   skillItem: {
     marginBottom: 16,
+    backgroundColor: "#2A2F45",
+    borderRadius: 8,
+    padding: 16,
   },
   skillHeader: {
     flexDirection: "row",
@@ -232,21 +397,71 @@ const styles = StyleSheet.create({
   skillName: {
     color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "bold",
   },
   skillLevel: {
     color: "#FFD700",
-    fontSize: 16,
+    fontSize: 14,
+  },
+  skillDescription: {
+    color: "#8F95B2",
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  progressBarContainer: {
+    marginTop: 16,
+  },
+  progressTextContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  progressText: {
+    color: "#8F95B2",
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  progressBarWrapper: {
+    position: "relative",
+    marginBottom: 8,
   },
   progressBar: {
-    height: 8,
-    backgroundColor: "#2A2F45",
-    borderRadius: 4,
+    height: 14,
+    backgroundColor: "#21263B",
+    borderRadius: 7,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#2A2F45",
+    marginBottom: 6,
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#FFA500",
-    borderRadius: 4,
+    borderRadius: 7,
+    position: "relative",
+    overflow: "hidden",
+  },
+  progressShine: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "50%",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderTopLeftRadius: 7,
+    borderTopRightRadius: 7,
+  },
+  progressPercentage: {
+    color: "#FFD700",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  currentExpText: {
+    color: "#4CAF50",
+    fontWeight: "bold",
+  },
+  totalExpText: {
+    color: "#FFA500",
+    fontWeight: "bold",
   },
   questsSection: {
     marginBottom: 32,

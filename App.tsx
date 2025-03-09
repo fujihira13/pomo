@@ -201,6 +201,7 @@ export default function App() {
               setShowTimerStats(false);
             }}
             taskId={selectedTask.id}
+            task={selectedTask}
           />
         ) : (
           <TimerScreen
