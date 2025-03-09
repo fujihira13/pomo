@@ -36,6 +36,15 @@ export const timerScreenStyles = StyleSheet.create({
   },
   settingsButton: {
     padding: spacing.sm,
+    backgroundColor: "rgba(143, 149, 178, 0.1)",
+    borderRadius: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  settingsButtonText: {
+    color: "#8F95B2",
+    fontSize: 14,
+    fontWeight: "500",
   },
   content: {
     flex: 1,

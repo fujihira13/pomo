@@ -384,7 +384,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
             onPress={() => setShowSettings(true)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="settings-outline" size={24} color="#8F95B2" />
+            <Text style={styles.settingsButtonText}>時間の設定</Text>
           </TouchableOpacity>
         </View>
 
