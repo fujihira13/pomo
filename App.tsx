@@ -85,6 +85,12 @@ export default function App() {
       task.id === updatedTask.id ? updatedTask : task
     );
     setTasks(updatedTasks);
+
+    // selectedTaskも更新（タスクIDが一致する場合）
+    if (selectedTask && selectedTask.id === updatedTask.id) {
+      console.log("App.tsx: selectedTaskも更新します");
+      setSelectedTask(updatedTask);
+    }
   };
 
   const handleSaveTask = (

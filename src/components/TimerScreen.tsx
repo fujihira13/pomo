@@ -350,8 +350,16 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
   // タスクIDを使わずにStatsScreenを表示するハンドラー
   const handleShowStats = () => {
-    // 引数なしで呼び出し
-    onShowStats();
+    // 最新のタスク情報でステータス画面を表示
+    if (onTaskUpdate) {
+      // 最新のタスク情報を親コンポーネントに再通知
+      onTaskUpdate(currentTask);
+    }
+
+    // 少し遅延させてからステータス画面を表示（状態更新を確実にするため）
+    setTimeout(() => {
+      onShowStats();
+    }, 50);
   };
 
   return (
