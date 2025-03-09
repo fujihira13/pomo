@@ -14,7 +14,7 @@ export const Home: React.FC<HomeProps> = ({
   onNewTask,
   onShowStats,
 }) => {
-  const isTaskLimitReached = tasks.length >= 5;
+  const isTaskLimitReached = tasks.length >= 3;
 
   const handleDeleteTask = async (taskId: string) => {
     try {
@@ -52,7 +52,7 @@ export const Home: React.FC<HomeProps> = ({
           >
             <Ionicons name="add" size={20} color="#FFFFFF" />
             <Text style={styles.newTaskButtonText}>
-              {isTaskLimitReached ? "タスク上限（5件）" : "新規タスク"}
+              {isTaskLimitReached ? "タスク上限（3件）" : "新規タスク"}
             </Text>
           </TouchableOpacity>
         </View>
