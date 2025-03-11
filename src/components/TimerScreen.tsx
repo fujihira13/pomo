@@ -153,14 +153,17 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
       if (currentMode === "work") {
         const newSessions = completedSessions + 1;
+        console.log(
+          `セッション完了: ${newSessions}回目, モード: ${currentMode}`
+        );
 
-        // 経験値ポイントの計算（職業によるボーナスを考慮）
-        let baseExpPoints = 100;
+        // 【修正】すべての職業で同一の経験値（100ポイント）を獲得するように変更
+        // 職業によるボーナスを削除
+        const baseExpPoints = 100;
 
-        // 魔法使いは経験値+30%ボーナスがある
-        if (currentTask.job.type === "魔法使い") {
-          baseExpPoints = Math.floor(baseExpPoints * 1.3);
-        }
+        console.log(
+          `付与する経験値: ${baseExpPoints}ポイント（職業に関わらず固定）`
+        );
 
         // セッションデータを保存
         await StatsService.addSession({
@@ -168,7 +171,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           taskType: currentTask.name,
           timestamp: Date.now(),
           duration: Number(settings.workTime) * 60,
-          experiencePoints: baseExpPoints,
+          experiencePoints: baseExpPoints, // 職業に関わらず常に100
         });
 
         console.log(
