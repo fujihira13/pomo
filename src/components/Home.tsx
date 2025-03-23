@@ -13,6 +13,7 @@ export const Home: React.FC<HomeProps> = ({
   onDeleteTask,
   onNewTask,
   onShowStats,
+  onShowGuide,
 }) => {
   const isTaskLimitReached = tasks.length >= 3;
 
@@ -36,6 +37,9 @@ export const Home: React.FC<HomeProps> = ({
       <View style={styles.header}>
         <Text style={styles.title}>タスク一覧</Text>
         <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.helpButton} onPress={onShowGuide}>
+            <Ionicons name="help-circle" size={24} color="#212121" />
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.statsButton}
             onPress={handleShowStats}

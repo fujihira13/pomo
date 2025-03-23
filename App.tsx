@@ -5,9 +5,10 @@ import { TimerScreen } from "./src/components/TimerScreen";
 import { NewTask } from "./src/components/NewTask";
 import { Stats } from "./src/components/Stats";
 import { StatsScreen } from "./src/components/StatsScreen";
+import { AppGuideModal } from "./src/components/AppGuideModal";
 import type { Task } from "./src/types/models/Task";
 import type { IconName } from "./src/types/models/IconName";
-import { saveTasks, loadTasks } from "./src/utils/storage";
+import { saveTasks, loadTasks, isFirstLaunch } from "./src/utils/storage";
 import { StatsService } from "./src/services/StatsService";
 import { calculateExpForNextLevel } from "./src/utils/levelUtils";
 import { appStyles } from "./src/styles/components/App.styles";
@@ -64,6 +65,7 @@ export default function App() {
   const [showTimerStats, setShowTimerStats] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   // アプリ起動時にタスクを読み込む
   useEffect(() => {
@@ -72,6 +74,17 @@ export default function App() {
       setTasks(savedTasks);
     };
     loadSavedTasks();
+  }, []);
+
+  // 初回起動時にガイドを表示
+  useEffect(() => {
+    const checkFirstLaunch = async () => {
+      const firstLaunch = await isFirstLaunch();
+      if (firstLaunch) {
+        setShowGuide(true);
+      }
+    };
+    checkFirstLaunch();
   }, []);
 
   // タスクが更新されたら保存する
@@ -196,6 +209,7 @@ export default function App() {
           onDeleteTask={handleDeleteTask}
           onNewTask={() => setCurrentScreen("newTask")}
           onShowStats={handleShowGlobalStats}
+          onShowGuide={() => setShowGuide(true)}
         />
       )}
 
@@ -242,6 +256,9 @@ export default function App() {
           editingTask={editingTask}
         />
       )}
+
+      {/* アプリ使用方法ガイド */}
+      <AppGuideModal visible={showGuide} onClose={() => setShowGuide(false)} />
     </SafeAreaView>
   );
 }

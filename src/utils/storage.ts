@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from "../types/models/Settings";
 
 const TASKS_STORAGE_KEY = "@pomo_tasks";
 const SETTINGS_STORAGE_KEY = "@pomo_settings";
+const FIRST_LAUNCH_KEY = "@pomo_first_launch";
 
 export const saveTasks = async (tasks: Task[]): Promise<void> => {
   try {
@@ -76,4 +77,29 @@ export const getTaskSettings = (
     (settings) => settings.taskId === taskId
   );
   return taskSettings ? taskSettings.settings : appSettings.globalSettings;
+};
+
+/**
+ * 初回起動かどうかを確認する
+ * @returns 初回起動の場合はtrue、そうでない場合はfalse
+ */
+export const isFirstLaunch = async (): Promise<boolean> => {
+  try {
+    const value = await AsyncStorage.getItem(FIRST_LAUNCH_KEY);
+    return value === null; // nullの場合は初回起動
+  } catch (error) {
+    console.error("初回起動の確認に失敗しました:", error);
+    return false; // エラーの場合はfalseを返す
+  }
+};
+
+/**
+ * 初回起動フラグを保存する
+ */
+export const setFirstLaunchComplete = async (): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(FIRST_LAUNCH_KEY, "false");
+  } catch (error) {
+    console.error("初回起動フラグの保存に失敗しました:", error);
+  }
 };
