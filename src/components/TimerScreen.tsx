@@ -57,12 +57,33 @@ TaskManager.defineTask(BACKGROUND_TIMER_TASK, async () => {
   try {
     // バックグラウンドでの処理 - タイマー終了時刻をチェック
     console.log("バックグラウンドタスクが実行されました");
+
+    // タイマーが終了しているときのみtrueを返すように修正された関数を呼び出す
     const isCompleted = await checkTimerEndTime();
 
     if (isCompleted === true) {
+      console.log("バックグラウンドタスク: タイマーが完了しました");
+
+      // 次のモードに自動的に切り替えられているかを確認する追加コード
+      const transition = getNextModeTransition();
+
+      if (transition.shouldTransition && transition.nextMode) {
+        // 次のモードがすでに設定されていて自動的に開始されている場合
+        console.log(
+          `バックグラウンドタスク: 次のモード ${transition.nextMode} に自動的に切り替わりました`
+        );
+      } else {
+        // 自動的に切り替わっていない場合は、NotificationServiceの実装で次のモードを計算して設定する
+        // 設定された内容はフォアグラウンドに戻ったときに適用される
+        console.log(
+          "バックグラウンドタスク: 次のモード移行がまだ設定されていません"
+        );
+      }
+
       return BackgroundFetch.BackgroundFetchResult.NewData;
     }
 
+    console.log("バックグラウンドタスク: タイマーはまだ実行中です");
     return BackgroundFetch.BackgroundFetchResult.NoData;
   } catch (error) {
     console.error("バックグラウンドタスクでエラーが発生しました:", error);
@@ -74,7 +95,7 @@ TaskManager.defineTask(BACKGROUND_TIMER_TASK, async () => {
 async function registerBackgroundTask() {
   try {
     await BackgroundFetch.registerTaskAsync(BACKGROUND_TIMER_TASK, {
-      minimumInterval: 15, // 最小間隔（秒）- 60秒から15秒に短縮
+      minimumInterval: 10, // 最小間隔（秒）- 15秒から10秒に短縮
       stopOnTerminate: false, // アプリが終了しても実行を継続
       startOnBoot: true, // デバイス起動時に開始
     });
@@ -171,13 +192,13 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
   // セッション完了時の処理
   const handleSessionComplete = useCallback(async () => {
-    // 一時的にタイマーを停止
-    setIsRunning(false);
-    // タイマー終了時刻をクリア
-    setTimerEndTime(null);
-    clearTimerEndTime();
+    // タイマー終了時刻をクリアするだけで、タイマーは停止させない
 
     try {
+      // タイマー終了時刻をクリア
+      setTimerEndTime(null);
+      clearTimerEndTime();
+
       // 音声を再生
       await playSound();
 
@@ -251,51 +272,58 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         saveCompletedSessions(newSessions);
 
         // 次のモードを設定
+        let newMode: "shortBreak" | "longBreak";
+        let newTime: number;
+
         if (newSessions % Number(settings.sessionsUntilLongBreak) === 0) {
-          const newTime = Number(settings.longBreakTime) * 60;
-          setCurrentMode("longBreak");
-          setTimeLeft(newTime);
-          // 作業セッション完了後は、設定に関わらず必ず次の休憩を自動開始する
+          newMode = "longBreak";
+          newTime = Number(settings.longBreakTime) * 60;
           console.log(`長い休憩モードに切り替え、自動的にタイマーを開始します`);
-          setIsRunning(true);
-          // 終了時刻を設定
-          const endTime = Date.now() + newTime * 1000;
-          setTimerEndTime(endTime);
-          saveTimerEndTime(endTime, "longBreak");
-
-          // 通知もスケジュールする
-          await scheduleSessionEndNotification("longBreak", newTime);
         } else {
-          const newTime = Number(settings.shortBreakTime) * 60;
-          setCurrentMode("shortBreak");
-          setTimeLeft(newTime);
-          // 作業セッション完了後は、設定に関わらず必ず次の休憩を自動開始する
+          newMode = "shortBreak";
+          newTime = Number(settings.shortBreakTime) * 60;
           console.log(`短い休憩モードに切り替え、自動的にタイマーを開始します`);
-          setIsRunning(true);
-          // 終了時刻を設定
-          const endTime = Date.now() + newTime * 1000;
-          setTimerEndTime(endTime);
-          saveTimerEndTime(endTime, "shortBreak");
-
-          // 通知もスケジュールする
-          await scheduleSessionEndNotification("shortBreak", newTime);
         }
+
+        // まず新しい時間を設定し、その後にモードを変更する
+        setTimeLeft(newTime);
+
+        // 新しいタイマーの終了時刻を設定
+        const endTime = Date.now() + newTime * 1000;
+        setTimerEndTime(endTime);
+        saveTimerEndTime(endTime, newMode);
+
+        // 明示的にタイマーを実行中に設定
+        setIsRunning(true);
+
+        // 最後にモードを変更する（これにより不要な再レンダリングを防ぐ）
+        setCurrentMode(newMode);
+
+        // 通知もスケジュールする
+        await scheduleSessionEndNotification(newMode, newTime);
       } else {
         // 休憩が終了したら作業モードに戻る
+        const newMode = "work";
         const newTime = Number(settings.workTime) * 60;
+
         console.log(
           `休憩モード「${currentMode}」が終了したため、作業モードに切り替えます`
         );
-        setCurrentMode("work");
+
+        // まず新しい時間を設定
         setTimeLeft(newTime);
 
-        // 自動開始設定が有効な場合は次のセッションを開始
-        // ここは必ず自動的に開始する
-        setIsRunning(true);
-        // 終了時刻を設定
+        // 新しいタイマーの終了時刻を設定
         const endTime = Date.now() + newTime * 1000;
         setTimerEndTime(endTime);
-        saveTimerEndTime(endTime, "work");
+        saveTimerEndTime(endTime, newMode);
+
+        // 明示的にタイマーを実行中に設定
+        setIsRunning(true);
+
+        // 最後にモードを変更する（これにより不要な再レンダリングを防ぐ）
+        setCurrentMode(newMode);
+
         console.log(
           `作業モードを自動開始しました。終了時刻: ${new Date(
             endTime
@@ -303,7 +331,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         );
 
         // 通知もスケジュールする
-        await scheduleSessionEndNotification("work", newTime);
+        await scheduleSessionEndNotification(newMode, newTime);
       }
 
       // タイマー設定も更新
@@ -338,10 +366,11 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           const transition = getNextModeTransition();
 
           if (transition.shouldTransition && transition.nextMode) {
-            console.log(`次のモードに移行します: ${transition.nextMode}`);
-            setCurrentMode(
-              transition.nextMode as "work" | "shortBreak" | "longBreak"
-            );
+            const nextMode = transition.nextMode as
+              | "work"
+              | "shortBreak"
+              | "longBreak";
+            console.log(`次のモードに移行します: ${nextMode}`);
 
             // 完了したセッション数も更新
             if (transition.completedSessions !== undefined) {
@@ -350,34 +379,30 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
             // 移行先に応じてタイマーを設定
             let newTime = 0;
-            if (transition.nextMode === "work") {
+            if (nextMode === "work") {
               newTime = Number(settings.workTime) * 60;
-            } else if (transition.nextMode === "shortBreak") {
+            } else if (nextMode === "shortBreak") {
               newTime = Number(settings.shortBreakTime) * 60;
-            } else if (transition.nextMode === "longBreak") {
+            } else if (nextMode === "longBreak") {
               newTime = Number(settings.longBreakTime) * 60;
             }
 
+            // モード切り替え時は常に自動開始する
+            console.log(`次のモード ${nextMode} を自動開始します`);
+
+            // まず新しい時間を設定
             setTimeLeft(newTime);
 
-            // 自動開始設定に基づいてタイマーを開始
-            const shouldAutoStart =
-              transition.nextMode === "work"
-                ? settings.autoStartPomodoros
-                : settings.autoStartBreaks;
+            // 新しいタイマーの終了時刻を設定
+            const endTime = Date.now() + newTime * 1000;
+            setTimerEndTime(endTime);
+            saveTimerEndTime(endTime, nextMode);
 
-            if (shouldAutoStart) {
-              console.log(`次のモード ${transition.nextMode} を自動開始します`);
-              setIsRunning(true);
-              const endTime = Date.now() + newTime * 1000;
-              setTimerEndTime(endTime);
-              saveTimerEndTime(endTime, transition.nextMode);
-            } else {
-              // 自動開始しない場合は明示的にタイマー状態をリセット
-              setIsRunning(false);
-              setTimerEndTime(null);
-              clearTimerEndTime();
-            }
+            // 明示的にタイマーを実行中に設定
+            setIsRunning(true);
+
+            // 最後にモードを変更する（これにより不要な再レンダリングを防ぐ）
+            setCurrentMode(nextMode);
           } else if (isTimerComplete) {
             // タイマーが終了していたらセッション完了処理を実行
             console.log(
@@ -392,7 +417,12 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
               if (now < timerEndTime) {
                 const newTimeLeft = Math.ceil((timerEndTime - now) / 1000);
                 console.log(`残り時間を再計算: ${newTimeLeft}秒`);
+
+                // まず残り時間を更新
                 setTimeLeft(newTimeLeft);
+
+                // その後タイマーを実行中に設定
+                setIsRunning(true);
               } else {
                 // 終了時刻を過ぎている場合は完了処理を実行
                 console.log(
@@ -405,10 +435,14 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
               console.log(
                 "タイマーは実行中だが終了時刻が設定されていません。状態を修正します"
               );
+
               // 現在の残り時間で新しい終了時刻を設定
               const endTime = Date.now() + timeLeft * 1000;
               setTimerEndTime(endTime);
               saveTimerEndTime(endTime, currentMode);
+
+              // 明示的にタイマーを実行中に設定
+              setIsRunning(true);
             }
           }
         } catch (error) {
@@ -610,10 +644,11 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         const transition = getNextModeTransition();
 
         if (transition.shouldTransition && transition.nextMode) {
-          console.log(`モード移行を検出: ${transition.nextMode}`);
-          setCurrentMode(
-            transition.nextMode as "work" | "shortBreak" | "longBreak"
-          );
+          const nextMode = transition.nextMode as
+            | "work"
+            | "shortBreak"
+            | "longBreak";
+          console.log(`モード移行を検出: ${nextMode}`);
 
           // 完了したセッション数も更新
           if (transition.completedSessions !== undefined) {
@@ -622,15 +657,30 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
           // 新しいモードに合わせてタイマーを設定
           let newTime = 0;
-          if (transition.nextMode === "work") {
+          if (nextMode === "work") {
             newTime = Number(settings.workTime) * 60;
-          } else if (transition.nextMode === "shortBreak") {
+          } else if (nextMode === "shortBreak") {
             newTime = Number(settings.shortBreakTime) * 60;
-          } else if (transition.nextMode === "longBreak") {
+          } else if (nextMode === "longBreak") {
             newTime = Number(settings.longBreakTime) * 60;
           }
 
+          // 常に自動開始する
+          console.log(`起動時に新しいモード ${nextMode} を自動開始します`);
+
+          // まず新しい時間を設定
           setTimeLeft(newTime);
+
+          // 新しいタイマーの終了時刻を設定
+          const endTime = Date.now() + newTime * 1000;
+          setTimerEndTime(endTime);
+          saveTimerEndTime(endTime, nextMode);
+
+          // 明示的にタイマーを実行中に設定
+          setIsRunning(true);
+
+          // 最後にモードを変更する
+          setCurrentMode(nextMode);
         } else if (isTimerComplete === true) {
           // タイマーが終了していた場合は完了処理を実行
           console.log(
@@ -643,7 +693,11 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           if (now < timerEndTime) {
             const newTimeLeft = Math.ceil((timerEndTime - now) / 1000);
             console.log(`起動時の残り時間を再計算: ${newTimeLeft}秒`);
+
+            // まず残り時間を更新
             setTimeLeft(newTimeLeft);
+
+            // その後タイマーを実行中に設定
             setIsRunning(true);
           } else {
             // 終了時刻を過ぎていた場合もセッション完了処理を実行
@@ -722,9 +776,16 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           if (remaining <= 0) {
             // タイマーが終了した場合
             clearInterval(interval);
-            console.log("タイマーが終了しました");
-            await handleSessionComplete();
-            setTimeLeft(0);
+            console.log(
+              "タイマーが終了しました - セッション完了処理を開始します"
+            );
+
+            // タイマーを停止させないのでここではsetIsRunning(false)を呼び出さない
+            // ここではタイマーの時間は0にしない
+            // setTimeLeft(0); この行を削除
+
+            // セッション完了処理を実行（次のモードへの切り替えが行われる）
+            await handleSessionComplete(); // セッション完了時のみ通知が送信される
           } else {
             // まだ時間が残っている場合
             setTimeLeft(remaining);
@@ -734,8 +795,15 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           setTimeLeft((prevTime) => {
             if (prevTime <= 1) {
               clearInterval(interval);
+              console.log(
+                "フォールバック: タイマーが終了しました - セッション完了処理を開始します"
+              );
+
+              // タイマーを停止させないのでここではsetIsRunning(false)を呼び出さない
               handleSessionComplete(); // ここではawaitが使えないので非同期で実行
-              return 0;
+
+              // ここでは0を返さない
+              return 1; // 0ではなく1を返して次のインターバルでhandleSessionCompleteの処理が完了するようにする
             }
             return prevTime - 1;
           });
@@ -749,7 +817,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         clearInterval(interval);
       }
     };
-  }, [isRunning, currentMode, timerEndTime]);
+  }, [isRunning, timeLeft, timerEndTime, currentMode, handleSessionComplete]);
 
   // 設定変更時にタイマーを更新するuseEffect
   useEffect(() => {

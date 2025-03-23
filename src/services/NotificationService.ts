@@ -134,14 +134,15 @@ export const scheduleSessionEndNotification = async (
   // まず既存の通知をキャンセル
   await cancelAllNotifications();
 
-  // シンプルに通知をスケジュール（triggerを省略してセッション終了時に通知）
-  // 基本的な情報だけをログに残して、その他のロジックは変更せず、sendSessionCompleteNotificationに委譲する
+  // 通知を送信せず、タイマー終了時刻の保存のみを行う
+  // 実際の通知はcheckTimerEndTimeが処理し、タイマーが終了した時のみ送信される
   console.log(
-    `${mode}モードの通知を${duration}秒後に送信するようにスケジュールします`
+    `${mode}モードのタイマーを${duration}秒後に終了するようにスケジュールします。` +
+      `タイマー終了時にのみ通知が表示されます。`
   );
 
-  // バックグラウンド通知のためにタイマー終了時刻とモードを保存する（実際の通知はcheckTimerEndTimeが処理）
-  // スケジュールされた通知がここではないため、実際のスケジュールは行わない
+  // バックグラウンド通知のためのタイマー情報は既に保存済み（saveTimerEndTimeで）
+  // ここでは追加の処理は不要
 };
 
 // タイマーの終了時刻をチェックし、必要に応じて通知を送信
@@ -175,89 +176,8 @@ export const checkTimerEndTime = async (): Promise<boolean> => {
         );
       }
 
-      // 次のモードが自動開始される場合は、新しい終了時刻を設定
-      if (nextModeInfo.shouldAutoStart) {
-        const nextDuration = getModeDuration(nextModeInfo.nextMode);
-        const newEndTime = Date.now() + nextDuration * 1000;
-
-        console.log(
-          `自動開始する新しいモード: ${
-            nextModeInfo.nextMode
-          }, 継続時間: ${nextDuration}秒, 終了時刻: ${new Date(
-            newEndTime
-          ).toLocaleTimeString()}`
-        );
-
-        // モードと終了時間を更新
-        timerEndTimeStorage.mode = nextModeInfo.nextMode;
-        timerEndTimeStorage.endTime = newEndTime;
-        timerEndTimeStorage.notificationSent = false;
-        // 移行フラグをtrueのままにして、アプリがフォアグラウンドに戻ったときに検出できるようにする
-        timerEndTimeStorage.shouldTransitionToNextMode = true;
-
-        // 実際に新しいタイマーが開始されたことを確認するログ
-        console.log(
-          `次のモードに自動移行: ${nextModeInfo.nextMode}, 終了時刻: ${new Date(
-            newEndTime
-          ).toLocaleTimeString()}`
-        );
-
-        // 現在のモードとタイマー状態のログ出力
-        console.log("タイマー状態:", {
-          モード: timerEndTimeStorage.mode,
-          終了時刻: new Date(timerEndTimeStorage.endTime).toLocaleTimeString(),
-          通知済み: timerEndTimeStorage.notificationSent,
-          完了セッション: timerEndTimeStorage.completedSessions,
-        });
-
-        // 次のモードのタイマーが開始されたことを示す値を返す
-        return true;
-      } else {
-        // 自動開始しない場合は終了時刻をクリアするが、モード移行情報は保持
-        timerEndTimeStorage.endTime = null;
-        console.log("次のモードは自動開始しません。タイマーをクリアしました。");
-      }
-
-      return true;
-    }
-  }
-
-  // すでに次のモードに移行していて、そのタイマーも終了している場合
-  if (
-    timerEndTimeStorage.shouldTransitionToNextMode &&
-    timerEndTimeStorage.endTime &&
-    now >= timerEndTimeStorage.endTime &&
-    !timerEndTimeStorage.notificationSent
-  ) {
-    console.log("バックグラウンドで自動開始したモードが終了しました");
-
-    // 再度通知を送信し、次のモードへの移行を準備
-    await sendSessionCompleteNotification(timerEndTimeStorage.mode);
-    timerEndTimeStorage.notificationSent = true;
-
-    // 次のモードを計算
-    const nextModeInfo = calculateNextMode(
-      timerEndTimeStorage.mode,
-      timerEndTimeStorage.completedSessions,
-      timerEndTimeStorage.sessionsUntilLongBreak,
-      timerEndTimeStorage.autoStartBreaks,
-      timerEndTimeStorage.autoStartPomodoros
-    );
-
-    // 移行フラグを更新
-    timerEndTimeStorage.shouldTransitionToNextMode = true;
-    timerEndTimeStorage.nextMode = nextModeInfo.nextMode;
-
-    // 作業モードだった場合はカウントを増やす
-    if (timerEndTimeStorage.mode === "work") {
-      timerEndTimeStorage.completedSessions += 1;
-      console.log(
-        `セッションを完了し、カウントを増加: ${timerEndTimeStorage.completedSessions}`
-      );
-    }
-
-    // 自動開始する場合は新しいタイマーを設定
-    if (nextModeInfo.shouldAutoStart) {
+      // 次のモードを自動的に開始する（バックグラウンドでも自動開始するよう修正）
+      // shouldAutoStartの条件に関わらず、バックグラウンドではすべてのモード遷移で自動開始する
       const nextDuration = getModeDuration(nextModeInfo.nextMode);
       const newEndTime = Date.now() + nextDuration * 1000;
 
@@ -273,21 +193,27 @@ export const checkTimerEndTime = async (): Promise<boolean> => {
       timerEndTimeStorage.mode = nextModeInfo.nextMode;
       timerEndTimeStorage.endTime = newEndTime;
       timerEndTimeStorage.notificationSent = false;
+      // 移行フラグをtrueのままにして、アプリがフォアグラウンドに戻ったときに検出できるようにする
+      timerEndTimeStorage.shouldTransitionToNextMode = true;
+
+      // 実際に新しいタイマーが開始されたことを確認するログ
+      console.log(
+        `バックグラウンドで次のモードに自動移行: ${
+          nextModeInfo.nextMode
+        }, 終了時刻: ${new Date(newEndTime).toLocaleTimeString()}`
+      );
 
       // 現在のモードとタイマー状態のログ出力
-      console.log("更新後のタイマー状態:", {
+      console.log("バックグラウンドのタイマー状態:", {
         モード: timerEndTimeStorage.mode,
         終了時刻: new Date(timerEndTimeStorage.endTime).toLocaleTimeString(),
         通知済み: timerEndTimeStorage.notificationSent,
         完了セッション: timerEndTimeStorage.completedSessions,
       });
-    } else {
-      // 自動開始しない場合は終了時刻をクリア
-      timerEndTimeStorage.endTime = null;
-      console.log("次のモードは自動開始しません。タイマーをクリアしました。");
-    }
 
-    return true;
+      // 次のモードのタイマーが開始されたことを示す値を返す
+      return true;
+    }
   }
 
   return false;
