@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
+import { activateKeepAwake, deactivateKeepAwake } from "expo-keep-awake";
 import { TimerScreenProps } from "../types/components/TimerScreen.types";
 import { timerScreenStyles as styles } from "../styles/components/TimerScreen.styles";
 import {
@@ -364,6 +365,20 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
       onShowStats();
     }, 50);
   };
+
+  // タイマー実行中はスクリーンスリープを防止
+  useEffect(() => {
+    if (isRunning) {
+      activateKeepAwake();
+    } else {
+      deactivateKeepAwake();
+    }
+
+    return () => {
+      // コンポーネントのアンマウント時にスリープ防止を解除
+      deactivateKeepAwake();
+    };
+  }, [isRunning]);
 
   return (
     <SafeAreaView style={styles.container}>

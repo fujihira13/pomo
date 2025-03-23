@@ -128,7 +128,7 @@ export const AppGuideModal: React.FC<AppGuideModalProps> = ({
                 <View style={styles.guideContent}>
                   <Text style={styles.guideTitle}>アプリは表示したまま</Text>
                   <Text style={styles.guideDescription}>
-                    ポモドーロ実行中はアプリを画面に表示したままにしてください。他のアプリに切り替えるとタイマーが正確に動作しません。
+                    ポモドーロ実行中はアプリを画面に表示したまま画面は閉じないでください。他のアプリに切り替えるとタイマーが正確に動作しません。
                   </Text>
                 </View>
               </View>
@@ -151,7 +151,7 @@ export const AppGuideModal: React.FC<AppGuideModalProps> = ({
               <View style={styles.warningContent}>
                 <Text style={styles.warningTitle}>重要</Text>
                 <Text style={styles.warningText}>
-                  タイマー実行中にアプリを閉じたり、他のアプリに切り替えたりすると、タイマーが一時停止します。これは最大限の集中を促すための仕様です。
+                  タイマー実行中に画面を閉じたり、他のアプリに切り替えたりするとタイマーが一時停止します。タイマー実行中は画面のスリープを防止する機能を搭載していますので、電池の消費にご注意ください。これは、最大限の集中を促すための仕様です。
                 </Text>
               </View>
             </View>
