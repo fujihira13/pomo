@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,14 @@ import {
   StatusBar,
   Alert,
   Modal,
+  AppState,
+  AppStateStatus,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
+import * as BackgroundFetch from "expo-background-fetch";
+import * as TaskManager from "expo-task-manager";
+import * as Notifications from "expo-notifications";
 import { TimerScreenProps } from "../types/components/TimerScreen.types";
 import { timerScreenStyles as styles } from "../styles/components/TimerScreen.styles";
 import {
@@ -23,6 +28,61 @@ import { loadSettings, saveSettings, updateTask } from "../utils/storage";
 import { StatsService } from "../services/StatsService";
 import { updateExperienceAndLevel } from "../utils/levelUtils";
 import { Task } from "../types/models/Task";
+import {
+  registerForPushNotificationsAsync,
+  scheduleSessionEndNotification,
+  sendSessionCompleteNotification,
+  cancelAllNotifications,
+  saveTimerEndTime,
+  checkTimerEndTime,
+  clearTimerEndTime,
+  saveTimerSettings,
+  saveCompletedSessions,
+  getNextModeTransition,
+} from "../services/NotificationService";
+
+const BACKGROUND_TIMER_TASK = "background-timer-task";
+
+// アプリの状態が変わったときに通知を受け取るための設定
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+// バックグラウンドタスクの登録（アプリが閉じられていても実行される）
+TaskManager.defineTask(BACKGROUND_TIMER_TASK, async () => {
+  try {
+    // バックグラウンドでの処理 - タイマー終了時刻をチェック
+    console.log("バックグラウンドタスクが実行されました");
+    const isCompleted = await checkTimerEndTime();
+
+    if (isCompleted === true) {
+      return BackgroundFetch.BackgroundFetchResult.NewData;
+    }
+
+    return BackgroundFetch.BackgroundFetchResult.NoData;
+  } catch (error) {
+    console.error("バックグラウンドタスクでエラーが発生しました:", error);
+    return BackgroundFetch.BackgroundFetchResult.Failed;
+  }
+});
+
+// バックグラウンドタスクを登録する関数
+async function registerBackgroundTask() {
+  try {
+    await BackgroundFetch.registerTaskAsync(BACKGROUND_TIMER_TASK, {
+      minimumInterval: 15, // 最小間隔（秒）- 60秒から15秒に短縮
+      stopOnTerminate: false, // アプリが終了しても実行を継続
+      startOnBoot: true, // デバイス起動時に開始
+    });
+    console.log("バックグラウンドタスクが登録されました");
+  } catch (err) {
+    console.log("バックグラウンドタスクの登録に失敗しました:", err);
+  }
+}
 
 export const TimerScreen: React.FC<TimerScreenProps> = ({
   task,
@@ -48,65 +108,31 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
 
-  // アプリ設定の読み込み
-  useEffect(() => {
-    const loadAppSettings = async () => {
-      try {
-        const savedSettings = await loadSettings();
-        if (savedSettings) {
-          setAppSettings(savedSettings);
-          // タスク固有の設定を取得
-          const taskSettings = savedSettings.taskSettings.find(
-            (settings) => settings.taskId === task.id
-          );
+  // タイマーの終了時刻を記録するための状態
+  const [timerEndTime, setTimerEndTime] = useState<number | null>(null);
 
-          // タスク固有の設定が存在しない場合はデフォルト設定を使用
-          const settingsToUse = taskSettings
-            ? taskSettings.settings
-            : DEFAULT_SETTINGS;
-          setSettings(settingsToUse);
+  // AppStateの変更を監視するためのref
+  const appStateRef = useRef(AppState.currentState);
 
-          // 現在のモードに応じて適切な時間を設定
-          let newTime = Number(settingsToUse.workTime);
-          if (currentMode === "shortBreak") {
-            newTime = Number(settingsToUse.shortBreakTime);
-          } else if (currentMode === "longBreak") {
-            newTime = Number(settingsToUse.longBreakTime);
-          }
-          setTimeLeft(newTime * 60);
-        } else {
-          // 無効な設定の場合はデフォルト値を使用
-          setAppSettings({
-            globalSettings: DEFAULT_SETTINGS,
-            taskSettings: [],
-          });
-          setSettings(DEFAULT_SETTINGS);
-          setTimeLeft(Number(DEFAULT_SETTINGS.workTime) * 60);
+  // 音声を再生する関数
+  async function playSound() {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        {
+          uri: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
+        },
+        { shouldPlay: true }
+      );
+
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if ("isLoaded" in status && status.isLoaded && status.didJustFinish) {
+          await sound.unloadAsync();
         }
-      } catch (error) {
-        console.error("設定の読み込みに失敗しました:", error);
-        // エラー時はデフォルト値を使用
-        setAppSettings({
-          globalSettings: DEFAULT_SETTINGS,
-          taskSettings: [],
-        });
-        setSettings(DEFAULT_SETTINGS);
-        setTimeLeft(Number(DEFAULT_SETTINGS.workTime) * 60);
-      }
-    };
-    loadAppSettings();
-  }, [task.id, currentMode]);
-
-  // 設定が変更されたときにタイマーを更新
-  useEffect(() => {
-    let newTime = Number(settings.workTime);
-    if (currentMode === "shortBreak") {
-      newTime = Number(settings.shortBreakTime);
-    } else if (currentMode === "longBreak") {
-      newTime = Number(settings.longBreakTime);
+      });
+    } catch (error) {
+      console.error("音声の再生に失敗しました:", error);
     }
-    setTimeLeft(newTime * 60);
-  }, [settings, currentMode]);
+  }
 
   // タスク更新後にApp.tsxのタスクリストも更新するための関数
   const updateTaskAndNotify = async (updatedTask: Task) => {
@@ -143,13 +169,20 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     }, 2000);
   };
 
+  // セッション完了時の処理
   const handleSessionComplete = useCallback(async () => {
     // 一時的にタイマーを停止
     setIsRunning(false);
+    // タイマー終了時刻をクリア
+    setTimerEndTime(null);
+    clearTimerEndTime();
 
     try {
       // 音声を再生
       await playSound();
+
+      // バックグラウンドでの通知
+      await sendSessionCompleteNotification(currentMode);
 
       if (currentMode === "work") {
         const newSessions = completedSessions + 1;
@@ -214,97 +247,290 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         // セッション数を更新
         setCompletedSessions(newSessions);
 
+        // 完了したセッション数を保存
+        saveCompletedSessions(newSessions);
+
         // 次のモードを設定
         if (newSessions % Number(settings.sessionsUntilLongBreak) === 0) {
           const newTime = Number(settings.longBreakTime) * 60;
           setCurrentMode("longBreak");
           setTimeLeft(newTime);
-          // 自動開始設定が有効な場合は次のセッションを開始
-          if (settings.autoStartBreaks) {
-            setIsRunning(true);
-          }
+          // 作業セッション完了後は、設定に関わらず必ず次の休憩を自動開始する
+          console.log(`長い休憩モードに切り替え、自動的にタイマーを開始します`);
+          setIsRunning(true);
+          // 終了時刻を設定
+          const endTime = Date.now() + newTime * 1000;
+          setTimerEndTime(endTime);
+          saveTimerEndTime(endTime, "longBreak");
+
+          // 通知もスケジュールする
+          await scheduleSessionEndNotification("longBreak", newTime);
         } else {
           const newTime = Number(settings.shortBreakTime) * 60;
           setCurrentMode("shortBreak");
           setTimeLeft(newTime);
-          // 自動開始設定が有効な場合は次のセッションを開始
-          if (settings.autoStartBreaks) {
-            setIsRunning(true);
-          }
+          // 作業セッション完了後は、設定に関わらず必ず次の休憩を自動開始する
+          console.log(`短い休憩モードに切り替え、自動的にタイマーを開始します`);
+          setIsRunning(true);
+          // 終了時刻を設定
+          const endTime = Date.now() + newTime * 1000;
+          setTimerEndTime(endTime);
+          saveTimerEndTime(endTime, "shortBreak");
+
+          // 通知もスケジュールする
+          await scheduleSessionEndNotification("shortBreak", newTime);
         }
       } else {
         // 休憩が終了したら作業モードに戻る
         const newTime = Number(settings.workTime) * 60;
+        console.log(
+          `休憩モード「${currentMode}」が終了したため、作業モードに切り替えます`
+        );
         setCurrentMode("work");
         setTimeLeft(newTime);
+
         // 自動開始設定が有効な場合は次のセッションを開始
-        if (settings.autoStartPomodoros) {
-          setIsRunning(true);
-        }
+        // ここは必ず自動的に開始する
+        setIsRunning(true);
+        // 終了時刻を設定
+        const endTime = Date.now() + newTime * 1000;
+        setTimerEndTime(endTime);
+        saveTimerEndTime(endTime, "work");
+        console.log(
+          `作業モードを自動開始しました。終了時刻: ${new Date(
+            endTime
+          ).toLocaleTimeString()}`
+        );
+
+        // 通知もスケジュールする
+        await scheduleSessionEndNotification("work", newTime);
       }
+
+      // タイマー設定も更新
+      saveTimerSettings(
+        Number(settings.workTime) * 60,
+        Number(settings.shortBreakTime) * 60,
+        Number(settings.longBreakTime) * 60,
+        Number(settings.sessionsUntilLongBreak),
+        settings.autoStartBreaks,
+        settings.autoStartPomodoros
+      );
     } catch (error) {
       console.error("セッション完了処理でエラーが発生しました:", error);
     }
-  }, [currentMode, completedSessions, settings, currentTask, playSound]);
+  }, [currentMode, completedSessions, settings, currentTask]);
 
-  // タイマーのカウントダウン処理
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    let isCompleting = false;
+  // アプリの状態変更を処理する関数
+  const handleAppStateChange = useCallback(
+    async (nextAppState: AppStateStatus) => {
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        console.log("アプリがバックグラウンドからフォアグラウンドに戻りました");
 
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          if (prevTime <= 1 && !isCompleting) {
-            isCompleting = true;
-            handleSessionComplete();
-            return 0;
+        try {
+          // タイマーの状態を確認
+          const isTimerComplete = await checkTimerEndTime();
+          console.log(`タイマー終了状態確認結果: ${isTimerComplete}`);
+
+          // バックグラウンドから戻ってきた時にモード移行が必要かチェック
+          const transition = getNextModeTransition();
+
+          if (transition.shouldTransition && transition.nextMode) {
+            console.log(`次のモードに移行します: ${transition.nextMode}`);
+            setCurrentMode(
+              transition.nextMode as "work" | "shortBreak" | "longBreak"
+            );
+
+            // 完了したセッション数も更新
+            if (transition.completedSessions !== undefined) {
+              setCompletedSessions(transition.completedSessions);
+            }
+
+            // 移行先に応じてタイマーを設定
+            let newTime = 0;
+            if (transition.nextMode === "work") {
+              newTime = Number(settings.workTime) * 60;
+            } else if (transition.nextMode === "shortBreak") {
+              newTime = Number(settings.shortBreakTime) * 60;
+            } else if (transition.nextMode === "longBreak") {
+              newTime = Number(settings.longBreakTime) * 60;
+            }
+
+            setTimeLeft(newTime);
+
+            // 自動開始設定に基づいてタイマーを開始
+            const shouldAutoStart =
+              transition.nextMode === "work"
+                ? settings.autoStartPomodoros
+                : settings.autoStartBreaks;
+
+            if (shouldAutoStart) {
+              console.log(`次のモード ${transition.nextMode} を自動開始します`);
+              setIsRunning(true);
+              const endTime = Date.now() + newTime * 1000;
+              setTimerEndTime(endTime);
+              saveTimerEndTime(endTime, transition.nextMode);
+            } else {
+              // 自動開始しない場合は明示的にタイマー状態をリセット
+              setIsRunning(false);
+              setTimerEndTime(null);
+              clearTimerEndTime();
+            }
+          } else if (isTimerComplete) {
+            // タイマーが終了していたらセッション完了処理を実行
+            console.log(
+              "タイマーが終了しているため、セッション完了処理を実行します"
+            );
+            await handleSessionComplete();
+          } else if (isRunning) {
+            // タイマーが実行中の場合
+            if (timerEndTime) {
+              // 終了時刻が設定されている場合、残り時間を再計算
+              const now = Date.now();
+              if (now < timerEndTime) {
+                const newTimeLeft = Math.ceil((timerEndTime - now) / 1000);
+                console.log(`残り時間を再計算: ${newTimeLeft}秒`);
+                setTimeLeft(newTimeLeft);
+              } else {
+                // 終了時刻を過ぎている場合は完了処理を実行
+                console.log(
+                  "タイマー終了時刻を過ぎているため、セッション完了処理を実行します"
+                );
+                await handleSessionComplete();
+              }
+            } else {
+              // 実行中だが終了時刻が設定されていない場合（通常起きないはず）
+              console.log(
+                "タイマーは実行中だが終了時刻が設定されていません。状態を修正します"
+              );
+              // 現在の残り時間で新しい終了時刻を設定
+              const endTime = Date.now() + timeLeft * 1000;
+              setTimerEndTime(endTime);
+              saveTimerEndTime(endTime, currentMode);
+            }
           }
-          return prevTime - 1;
-        });
-      }, 1000);
-    }
+        } catch (error) {
+          console.error(
+            "フォアグラウンド復帰時のタイマー処理でエラーが発生しました:",
+            error
+          );
+        }
+      } else if (nextAppState.match(/inactive|background/)) {
+        console.log(
+          "アプリがフォアグラウンドからバックグラウンドに移動しました"
+        );
 
-    return () => {
-      if (interval) {
-        clearInterval(interval);
+        // バックグラウンドに移行する際に現在のタイマー状態を保存
+        if (isRunning) {
+          // 新しい終了時刻を計算して保存
+          const endTime = Date.now() + timeLeft * 1000;
+          setTimerEndTime(endTime);
+          console.log(
+            `タイマー状態を保存: モード=${currentMode}, 残り時間=${timeLeft}秒, 終了時刻=${new Date(
+              endTime
+            ).toLocaleTimeString()}`
+          );
+
+          // タイマー設定を保存
+          saveTimerSettings(
+            Number(settings.workTime) * 60,
+            Number(settings.shortBreakTime) * 60,
+            Number(settings.longBreakTime) * 60,
+            Number(settings.sessionsUntilLongBreak),
+            settings.autoStartBreaks,
+            settings.autoStartPomodoros
+          );
+
+          // 完了したセッション数を保存
+          saveCompletedSessions(completedSessions);
+
+          // タイマー終了時刻を保存
+          saveTimerEndTime(endTime, currentMode);
+
+          // 通知をスケジュール
+          if (currentMode === "work") {
+            await scheduleSessionEndNotification("work", timeLeft);
+          } else if (currentMode === "shortBreak") {
+            await scheduleSessionEndNotification("shortBreak", timeLeft);
+          } else if (currentMode === "longBreak") {
+            await scheduleSessionEndNotification("longBreak", timeLeft);
+          }
+        }
       }
-    };
-  }, [isRunning, timeLeft, handleSessionComplete]);
 
-  // 音声を再生する関数
-  async function playSound() {
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        {
-          uri: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
-        },
-        { shouldPlay: true }
+      appStateRef.current = nextAppState;
+    },
+    [
+      isRunning,
+      timeLeft,
+      currentMode,
+      settings,
+      completedSessions,
+      timerEndTime,
+      handleSessionComplete,
+    ]
+  );
+
+  // タイマーの制御関数
+  const toggleTimer = () => {
+    if (!isRunning) {
+      // タイマーを開始するとき、終了時刻を計算
+      const endTime = Date.now() + timeLeft * 1000;
+      console.log(
+        `タイマーを開始: 終了時刻=${new Date(
+          endTime
+        ).toLocaleTimeString()}, 残り時間=${timeLeft}秒`
+      );
+      setTimerEndTime(endTime);
+      saveTimerEndTime(endTime, currentMode);
+
+      // タイマー設定を保存
+      saveTimerSettings(
+        Number(settings.workTime) * 60,
+        Number(settings.shortBreakTime) * 60,
+        Number(settings.longBreakTime) * 60,
+        Number(settings.sessionsUntilLongBreak),
+        settings.autoStartBreaks,
+        settings.autoStartPomodoros
       );
 
-      sound.setOnPlaybackStatusUpdate(async (status) => {
-        if ("isLoaded" in status && status.isLoaded && status.didJustFinish) {
-          await sound.unloadAsync();
-        }
-      });
-    } catch (error) {
-      console.error("音声の再生に失敗しました:", error);
-    }
-  }
+      // 完了したセッション数を保存
+      saveCompletedSessions(completedSessions);
+    } else {
+      // タイマーを一時停止するとき
+      console.log(`タイマーを一時停止: 残り時間=${timeLeft}秒`);
 
-  const toggleTimer = () => {
+      // 通知をキャンセル
+      cancelAllNotifications();
+
+      // 終了時刻をクリア（一時停止状態を示す）
+      setTimerEndTime(null);
+      clearTimerEndTime();
+    }
+    // タイマーの実行状態を切り替え
     setIsRunning(!isRunning);
   };
 
   const resetTimer = () => {
+    console.log("タイマーをリセット");
     setIsRunning(false);
+    setTimerEndTime(null);
+    clearTimerEndTime();
+    cancelAllNotifications();
+
+    // 現在のモードに応じた初期時間を設定
+    let newTime = 0;
     if (currentMode === "work") {
-      setTimeLeft(Number(settings.workTime) * 60);
+      newTime = Number(settings.workTime) * 60;
     } else if (currentMode === "shortBreak") {
-      setTimeLeft(Number(settings.shortBreakTime) * 60);
-    } else {
-      setTimeLeft(Number(settings.longBreakTime) * 60);
+      newTime = Number(settings.shortBreakTime) * 60;
+    } else if (currentMode === "longBreak") {
+      newTime = Number(settings.longBreakTime) * 60;
     }
+    console.log(`新しい時間を設定: ${newTime}秒`);
+    setTimeLeft(newTime);
   };
 
   const handleSaveSettings = async (newSettings: TimerSettings) => {
@@ -347,10 +573,6 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     }
   };
 
-  // 残り時間を分と秒に変換
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-
   // タスクIDを使わずにStatsScreenを表示するハンドラー
   const handleShowStats = () => {
     // 最新のタスク情報でステータス画面を表示
@@ -364,6 +586,192 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
       onShowStats();
     }, 50);
   };
+
+  // useEffectフックで初期化と後始末を行う
+  useEffect(() => {
+    // 通知の設定を初期化
+    registerForPushNotificationsAsync();
+
+    // バックグラウンドタスクを登録
+    registerBackgroundTask();
+
+    // AppStateの変更リスナーを設定
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
+    // アプリ起動時にバックグラウンドでタイマーが終了していたかチェック
+    const checkTimerOnStartup = async () => {
+      try {
+        const isTimerComplete = await checkTimerEndTime();
+        console.log(`起動時のタイマー終了状態: ${isTimerComplete}`);
+
+        const transition = getNextModeTransition();
+
+        if (transition.shouldTransition && transition.nextMode) {
+          console.log(`モード移行を検出: ${transition.nextMode}`);
+          setCurrentMode(
+            transition.nextMode as "work" | "shortBreak" | "longBreak"
+          );
+
+          // 完了したセッション数も更新
+          if (transition.completedSessions !== undefined) {
+            setCompletedSessions(transition.completedSessions);
+          }
+
+          // 新しいモードに合わせてタイマーを設定
+          let newTime = 0;
+          if (transition.nextMode === "work") {
+            newTime = Number(settings.workTime) * 60;
+          } else if (transition.nextMode === "shortBreak") {
+            newTime = Number(settings.shortBreakTime) * 60;
+          } else if (transition.nextMode === "longBreak") {
+            newTime = Number(settings.longBreakTime) * 60;
+          }
+
+          setTimeLeft(newTime);
+        } else if (isTimerComplete === true) {
+          // タイマーが終了していた場合は完了処理を実行
+          console.log(
+            "起動時にタイマー終了を検出したため、セッション完了処理を実行します"
+          );
+          await handleSessionComplete();
+        } else if (timerEndTime) {
+          // タイマーが実行中だった場合は残り時間を再計算
+          const now = Date.now();
+          if (now < timerEndTime) {
+            const newTimeLeft = Math.ceil((timerEndTime - now) / 1000);
+            console.log(`起動時の残り時間を再計算: ${newTimeLeft}秒`);
+            setTimeLeft(newTimeLeft);
+            setIsRunning(true);
+          } else {
+            // 終了時刻を過ぎていた場合もセッション完了処理を実行
+            console.log(
+              "起動時にタイマー終了時刻を過ぎていたため、セッション完了処理を実行します"
+            );
+            await handleSessionComplete();
+          }
+        }
+      } catch (error) {
+        console.error(
+          "起動時のタイマー状態チェックでエラーが発生しました:",
+          error
+        );
+      }
+    };
+
+    checkTimerOnStartup();
+
+    // 設定を読み込む
+    loadSettings().then((loadedSettings) => {
+      if (loadedSettings) {
+        setAppSettings(loadedSettings);
+        // 現在のタスク用の設定があるか確認
+        const taskSetting = loadedSettings.taskSettings.find(
+          (s) => s.taskId === task.id
+        );
+        if (taskSetting) {
+          setSettings(taskSetting.settings);
+          // 初期モードを作業モードに設定
+          setCurrentMode("work");
+          setTimeLeft(Number(taskSetting.settings.workTime) * 60);
+        } else {
+          setSettings(loadedSettings.globalSettings);
+          // 初期モードを作業モードに設定
+          setCurrentMode("work");
+          setTimeLeft(Number(loadedSettings.globalSettings.workTime) * 60);
+        }
+      }
+    });
+
+    // クリーンアップ関数
+    return () => {
+      subscription.remove();
+      // タイマーをクリア
+      if (isRunning) {
+        clearTimerEndTime();
+      }
+    };
+  }, []);
+
+  // タイマーのカウントダウン処理用のuseEffect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isRunning && timeLeft > 0) {
+      // タイマー終了時刻を設定（バックグラウンドでの追跡用）
+      if (!timerEndTime) {
+        // 新しい終了時刻を計算 - 現在時刻 + 残り時間
+        const endTime = Date.now() + timeLeft * 1000;
+        console.log(
+          `タイマー終了時刻を設定: ${new Date(
+            endTime
+          ).toLocaleTimeString()}, 残り時間=${timeLeft}秒`
+        );
+        setTimerEndTime(endTime);
+        saveTimerEndTime(endTime, currentMode);
+      }
+
+      // 1秒ごとにカウントダウン
+      interval = setInterval(async () => {
+        if (timerEndTime) {
+          const now = Date.now();
+          const remaining = Math.max(0, Math.ceil((timerEndTime - now) / 1000));
+
+          if (remaining <= 0) {
+            // タイマーが終了した場合
+            clearInterval(interval);
+            console.log("タイマーが終了しました");
+            await handleSessionComplete();
+            setTimeLeft(0);
+          } else {
+            // まだ時間が残っている場合
+            setTimeLeft(remaining);
+          }
+        } else {
+          // timerEndTimeがない場合のフォールバック（通常は起きない）
+          setTimeLeft((prevTime) => {
+            if (prevTime <= 1) {
+              clearInterval(interval);
+              handleSessionComplete(); // ここではawaitが使えないので非同期で実行
+              return 0;
+            }
+            return prevTime - 1;
+          });
+        }
+      }, 1000);
+    }
+
+    // クリーンアップ
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isRunning, currentMode, timerEndTime]);
+
+  // 設定変更時にタイマーを更新するuseEffect
+  useEffect(() => {
+    // タイマーが実行中でなく、かつtimeLeftが設定されていない（またはtimeLeftが0）、かつtimerEndTimeもない場合のみ
+    // 初期表示時や設定変更後などにタイマーをリセット
+    if (!isRunning && !timerEndTime && timeLeft <= 0) {
+      let newTime = 0;
+      if (currentMode === "work") {
+        newTime = Number(settings.workTime) * 60;
+      } else if (currentMode === "shortBreak") {
+        newTime = Number(settings.shortBreakTime) * 60;
+      } else if (currentMode === "longBreak") {
+        newTime = Number(settings.longBreakTime) * 60;
+      }
+      console.log(`設定変更によりタイマーをリセット: ${newTime}秒`);
+      setTimeLeft(newTime);
+    }
+  }, [settings, currentMode, isRunning, timerEndTime]);
+
+  // 残り時間を分と秒に変換
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -463,43 +871,6 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
           >
             <Text style={styles.statsButtonText}>ステータスを見る</Text>
           </TouchableOpacity>
-
-          {/* デバッグ用ボタン - 本番環境では非表示
-          <TouchableOpacity
-            style={[styles.statsButton, { marginTop: 10 }]}
-            onPress={() => {
-              // 100経験値を追加
-              const { currentExp, maxExp, level, didLevelUp } =
-                updateExperienceAndLevel(
-                  currentTask.experience.current,
-                  currentTask.experience.max,
-                  currentTask.level,
-                  100
-                );
-
-              // タスクを更新
-              const updatedTask = {
-                ...currentTask,
-                level,
-                experience: {
-                  current: currentExp,
-                  max: maxExp,
-                },
-              };
-
-              // 更新を通知
-              updateTaskAndNotify(updatedTask);
-
-              // レベルアップした場合
-              if (didLevelUp) {
-                // 新しいレベルアップ通知を使用
-                showLevelUpNotification(currentTask.name, level);
-              }
-            }}
-          >
-            <Text style={styles.statsButtonText}>+100経験値（デバッグ用）</Text>
-          </TouchableOpacity>
-          */}
         </View>
       </View>
 
