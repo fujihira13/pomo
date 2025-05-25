@@ -96,7 +96,7 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
       }
     };
     loadAppSettings();
-  }, [task.id, currentMode]);
+  }, [task.id]);
 
   // 設定が変更されたときにタイマーを更新
   useEffect(() => {
@@ -108,6 +108,22 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
     }
     setTimeLeft(newTime * 60);
   }, [settings, currentMode]);
+
+  // モードが変わったときに正しい時間を設定する（実機ビルド用の追加対策）
+  useEffect(() => {
+    console.log(`モード変更: ${currentMode}`);
+    let newTime = Number(settings.workTime);
+    if (currentMode === "shortBreak") {
+      newTime = Number(settings.shortBreakTime);
+      console.log(`小休憩時間: ${newTime}分`);
+    } else if (currentMode === "longBreak") {
+      newTime = Number(settings.longBreakTime);
+      console.log(`長休憩時間: ${newTime}分`);
+    } else {
+      console.log(`作業時間: ${newTime}分`);
+    }
+    setTimeLeft(newTime * 60);
+  }, [currentMode]);
 
   // タスク更新後にApp.tsxのタスクリストも更新するための関数
   const updateTaskAndNotify = async (updatedTask: Task) => {
@@ -217,16 +233,20 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
 
         // 次のモードを設定
         if (newSessions % Number(settings.sessionsUntilLongBreak) === 0) {
-          const newTime = Number(settings.longBreakTime) * 60;
+          console.log("長休憩モードに移行します");
           setCurrentMode("longBreak");
+          // 明示的に長休憩時間を設定（useEffectの実行を待たない）
+          const newTime = Number(settings.longBreakTime) * 60;
           setTimeLeft(newTime);
           // 自動開始設定が有効な場合は次のセッションを開始
           if (settings.autoStartBreaks) {
             setIsRunning(true);
           }
         } else {
-          const newTime = Number(settings.shortBreakTime) * 60;
+          console.log("小休憩モードに移行します");
           setCurrentMode("shortBreak");
+          // 明示的に小休憩時間を設定（useEffectの実行を待たない）
+          const newTime = Number(settings.shortBreakTime) * 60;
           setTimeLeft(newTime);
           // 自動開始設定が有効な場合は次のセッションを開始
           if (settings.autoStartBreaks) {
@@ -235,8 +255,10 @@ export const TimerScreen: React.FC<TimerScreenProps> = ({
         }
       } else {
         // 休憩が終了したら作業モードに戻る
-        const newTime = Number(settings.workTime) * 60;
+        console.log("作業モードに移行します");
         setCurrentMode("work");
+        // 明示的に作業時間を設定（useEffectの実行を待たない）
+        const newTime = Number(settings.workTime) * 60;
         setTimeLeft(newTime);
         // 自動開始設定が有効な場合は次のセッションを開始
         if (settings.autoStartPomodoros) {
